@@ -1,0 +1,927 @@
+"use client";
+
+import { useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import {
+  Building2,
+  Calendar,
+  Car,
+  ChevronDown,
+  Globe,
+  Loader2,
+  MapPin,
+  Minus,
+  PlaneLanding,
+  PlaneTakeoff,
+  Plus,
+  Search,
+  Users,
+} from "lucide-react";
+import { searchCategories } from "@/lib/data";
+import { useClickOutside } from "@/lib/hooks";
+import { cn } from "@/lib/utils";
+
+const nationalities = [
+  "United States",
+  "United Kingdom",
+  "Canada",
+  "Australia",
+  "United Arab Emirates",
+  "Saudi Arabia",
+  "Qatar",
+  "Kuwait",
+  "India",
+  "Singapore",
+  "Germany",
+  "France",
+  "Belgium",
+  "New Zealand",
+  "South Africa",
+  "Philippines",
+  "Pakistan",
+  "Egypt",
+  "Jordan",
+  "Lebanon",
+];
+
+const destinationSuggestions = [
+  { city: "London", region: "United Kingdom" },
+  { city: "London", region: "Kentucky (USA)" },
+  { city: "London", region: "Ontario (Canada)" },
+  { city: "Dubai", region: "United Arab Emirates" },
+  { city: "Dubai Internet City", region: "United Arab Emirates" },
+  { city: "Bangkok", region: "Thailand" },
+  { city: "Bangkok, Bangkok", region: "Thailand" },
+  { city: "Paris", region: "France" },
+  { city: "New York", region: "United States" },
+  { city: "Singapore", region: "Singapore" },
+  { city: "Istanbul", region: "Turkey" },
+  { city: "Rome", region: "Italy" },
+  { city: "Cairo", region: "Egypt" },
+  { city: "Doha", region: "Qatar" },
+  { city: "Kuala Lumpur", region: "Malaysia" },
+  { city: "Sydney", region: "Australia" },
+  { city: "Barcelona", region: "Spain" },
+];
+
+type SearchFieldConfig = {
+  icon: React.ReactNode;
+  type: "text" | "location" | "date" | "dateRange" | "select" | "guests";
+  placeholder?: string;
+  hasChevron?: boolean;
+  options?: string[];
+  /** Wires this field to the SearchWidget's lifted state so it can be carried through the URL. */
+  primary?: boolean;
+};
+
+const defaultFields: SearchFieldConfig[] = [
+  { icon: <MapPin className="size-[18px]" />, type: "location", placeholder: "Where to?", primary: true },
+  { icon: <Calendar className="size-[18px]" />, type: "dateRange", placeholder: "Check-In - Check-out" },
+  { icon: <Users className="size-[18px]" />, type: "guests" },
+  { icon: <Globe className="size-[18px]" />, type: "select", placeholder: "Nationality", hasChevron: true, options: nationalities },
+];
+
+const searchFieldsByCategory: Record<string, SearchFieldConfig[]> = {
+  hotel: defaultFields,
+  sports: [
+    { icon: <MapPin className="size-[18px]" />, type: "text", placeholder: "Which event?" },
+    { icon: <Calendar className="size-[18px]" />, type: "date", placeholder: "Event date" },
+    { icon: <Users className="size-[18px]" />, type: "guests" },
+    { icon: <Globe className="size-[18px]" />, type: "select", placeholder: "Nationality", hasChevron: true, options: nationalities },
+  ],
+  cruise: [
+    { icon: <MapPin className="size-[18px]" />, type: "location", placeholder: "Departure port" },
+    { icon: <Calendar className="size-[18px]" />, type: "date", placeholder: "Departure date" },
+    { icon: <Users className="size-[18px]" />, type: "guests" },
+    { icon: <Globe className="size-[18px]" />, type: "select", placeholder: "Nationality", hasChevron: true, options: nationalities },
+  ],
+  packages: defaultFields,
+  "car-rental": [
+    { icon: <Car className="size-[18px]" />, type: "location", placeholder: "Pick-up location" },
+    { icon: <Calendar className="size-[18px]" />, type: "dateRange", placeholder: "Pick-up - Drop-off" },
+    { icon: <Users className="size-[18px]" />, type: "guests" },
+    { icon: <Globe className="size-[18px]" />, type: "select", placeholder: "Nationality", hasChevron: true, options: nationalities },
+  ],
+  activities: [
+    { icon: <MapPin className="size-[18px]" />, type: "location", placeholder: "Where to?" },
+    { icon: <Calendar className="size-[18px]" />, type: "date", placeholder: "Activity date" },
+    { icon: <Users className="size-[18px]" />, type: "guests" },
+    { icon: <Globe className="size-[18px]" />, type: "select", placeholder: "Nationality", hasChevron: true, options: nationalities },
+  ],
+  transfers: [
+    { icon: <MapPin className="size-[18px]" />, type: "location", placeholder: "Pick-up location" },
+    { icon: <MapPin className="size-[18px]" />, type: "location", placeholder: "Drop-off location" },
+    { icon: <Calendar className="size-[18px]" />, type: "date", placeholder: "Transfer date" },
+    { icon: <Users className="size-[18px]" />, type: "guests" },
+  ],
+};
+
+export type RoomConfig = { adults: number; children: number };
+
+const MAX_ROOMS = 3;
+const MAX_ADULTS = 9;
+const MAX_CHILDREN = 6;
+
+export type SearchWidgetInitialValues = {
+  destination?: string;
+  checkIn?: string;
+  checkOut?: string;
+  adults?: number;
+  children?: number;
+  rooms?: number;
+};
+
+export type FlightSearchInitialValues = {
+  tripType?: "oneway" | "roundtrip" | "multicity";
+  from?: string;
+  to?: string;
+  departureDate?: string;
+  returnDate?: string;
+  travelClass?: string;
+  passengers?: number;
+  directFlightOnly?: boolean;
+};
+
+function buildInitialRooms(initialValues?: SearchWidgetInitialValues): RoomConfig[] {
+  const roomCount = Math.min(MAX_ROOMS, Math.max(1, initialValues?.rooms ?? 1));
+  const totalAdults = Math.max(1, initialValues?.adults ?? 2);
+  const totalChildren = Math.max(0, initialValues?.children ?? 0);
+
+  const rooms: RoomConfig[] = Array.from({ length: roomCount }, () => ({ adults: 1, children: 0 }));
+  rooms[0] = {
+    adults: Math.max(1, totalAdults - (roomCount - 1)),
+    children: totalChildren,
+  };
+  return rooms;
+}
+
+type SharedSearchState = {
+  destination: string;
+  onDestinationChange: (value: string) => void;
+  checkIn: string;
+  checkOut: string;
+  onCheckInChange: (value: string) => void;
+  onCheckOutChange: (value: string) => void;
+  rooms: RoomConfig[];
+  onRoomsChange: (updater: (prev: RoomConfig[]) => RoomConfig[]) => void;
+};
+
+export function SearchWidget({
+  showCategoryTabs = true,
+  initialValues,
+  initialCategory,
+  flightInitialValues,
+}: {
+  showCategoryTabs?: boolean;
+  initialValues?: SearchWidgetInitialValues;
+  initialCategory?: string;
+  flightInitialValues?: FlightSearchInitialValues;
+}) {
+  const router = useRouter();
+  const [isSearching, startSearchTransition] = useTransition();
+  const [activeCategory, setActiveCategory] = useState(initialCategory ?? "hotel");
+  const [destination, setDestination] = useState(initialValues?.destination ?? "");
+  const [checkIn, setCheckIn] = useState(initialValues?.checkIn ?? "");
+  const [checkOut, setCheckOut] = useState(initialValues?.checkOut ?? "");
+  const [rooms, setRooms] = useState<RoomConfig[]>(() => buildInitialRooms(initialValues));
+  const fields = searchFieldsByCategory[activeCategory] ?? defaultFields;
+
+  const shared: SharedSearchState = {
+    destination,
+    onDestinationChange: setDestination,
+    checkIn,
+    checkOut,
+    onCheckInChange: setCheckIn,
+    onCheckOutChange: setCheckOut,
+    rooms,
+    onRoomsChange: setRooms,
+  };
+
+  function handleSearch() {
+    if (activeCategory !== "hotel") return;
+
+    const totalAdults = rooms.reduce((sum, room) => sum + room.adults, 0);
+    const totalChildren = rooms.reduce((sum, room) => sum + room.children, 0);
+
+    const params = new URLSearchParams();
+    if (destination.trim()) params.set("destination", destination.trim());
+    if (checkIn) params.set("checkIn", checkIn);
+    if (checkOut) params.set("checkOut", checkOut);
+    params.set("adults", String(totalAdults));
+    params.set("children", String(totalChildren));
+    params.set("rooms", String(rooms.length));
+
+    startSearchTransition(() => {
+      router.push(`/hotels?${params.toString()}`);
+    });
+  }
+
+  return (
+    <div className="relative z-10 mx-auto w-full">
+      {showCategoryTabs && (
+        <div
+          role="tablist"
+          aria-label="Search category"
+          className="scrollbar-hide flex gap-1 overflow-x-auto rounded-[6px] bg-white p-1.5 shadow-[0_4px_16px_rgba(0,0,0,0.1)] sm:inline-flex sm:flex-wrap sm:overflow-visible"
+        >
+          {searchCategories.map((category) => {
+            const isActive = activeCategory === category.value;
+            return (
+              <button
+                key={category.value}
+                type="button"
+                role="tab"
+                aria-selected={isActive}
+                onClick={() => setActiveCategory(category.value)}
+                className={cn(
+                  "rounded-full px-5 py-2.5 text-[15px] font-medium transition-colors",
+                  isActive ? "bg-brand-blue text-white" : "text-neutral-700 hover:bg-neutral-100"
+                )}
+              >
+                {category.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {activeCategory === "flight" ? (
+        <FlightSearchPanel
+          className={showCategoryTabs ? "mt-3" : undefined}
+          initialValues={flightInitialValues}
+        />
+      ) : (
+        <div
+          role="tabpanel"
+          className={cn(
+            "flex flex-col gap-2 rounded-2xl bg-white p-3 shadow-[0_10px_30px_rgba(0,0,0,0.12)] sm:p-4 lg:flex-row lg:items-center",
+            showCategoryTabs && "mt-3"
+          )}
+        >
+          {fields.map((field, index) => (
+            <SearchField key={index} {...field} shared={shared} />
+          ))}
+
+          <button
+            type="button"
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="flex h-[65px] shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isSearching ? (
+              <Loader2 className="size-[18px] animate-spin" />
+            ) : (
+              <Search className="size-[18px]" />
+            )}
+            {isSearching
+              ? "Searching..."
+              : `Search ${searchCategories.find((c) => c.value === activeCategory)?.label ?? ""}`}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+const fieldContainerClass =
+  "flex h-[65px] w-full shrink-0 items-center gap-2.5 rounded-xl bg-neutral-100 px-4 text-left transition-colors hover:bg-neutral-200/70 focus-within:bg-neutral-200/70 lg:flex-1";
+const controlClass =
+  "w-full min-w-0 flex-1 bg-transparent text-[14px] font-medium text-neutral-900 outline-none placeholder:text-neutral-500 [color-scheme:light]";
+
+function openPicker(ref: React.RefObject<HTMLInputElement | null>) {
+  ref.current?.showPicker?.();
+}
+
+function formatDate(value: string) {
+  const [year, month, day] = value.split("-");
+  return `${day}-${month}-${year}`;
+}
+
+const hiddenDateInputClass = "sr-only";
+
+function SearchField({
+  icon,
+  type,
+  placeholder,
+  hasChevron,
+  options,
+  primary,
+  shared,
+}: SearchFieldConfig & { shared: SharedSearchState }) {
+  const [singleDate, setSingleDate] = useState("");
+  const singleDateRef = useRef<HTMLInputElement>(null);
+  const checkInRef = useRef<HTMLInputElement>(null);
+  const checkOutRef = useRef<HTMLInputElement>(null);
+  const [rangeStartLabel, rangeEndLabel] = (placeholder ?? "").split(" - ");
+  const { checkIn, checkOut, onCheckInChange, onCheckOutChange } = shared;
+
+  if (type === "location") {
+    return (
+      <LocationField
+        icon={icon}
+        placeholder={placeholder}
+        value={primary ? shared.destination : undefined}
+        onChange={primary ? shared.onDestinationChange : undefined}
+      />
+    );
+  }
+
+  if (type === "guests") {
+    return <GuestsField icon={icon} rooms={shared.rooms} onRoomsChange={shared.onRoomsChange} />;
+  }
+
+  return (
+    <div className={fieldContainerClass}>
+      <span className="shrink-0 text-neutral-500">{icon}</span>
+
+      {type === "text" && <input type="text" placeholder={placeholder} className={controlClass} />}
+
+      {type === "date" && (
+        <div className="relative flex-1 cursor-pointer" onClick={() => openPicker(singleDateRef)}>
+          <span
+            className={cn(
+              "truncate text-[14px] font-medium",
+              singleDate ? "text-neutral-900" : "text-neutral-500"
+            )}
+          >
+            {singleDate ? formatDate(singleDate) : placeholder}
+          </span>
+          <input
+            ref={singleDateRef}
+            type="date"
+            value={singleDate}
+            onChange={(event) => setSingleDate(event.target.value)}
+            aria-label={placeholder}
+            className={hiddenDateInputClass}
+          />
+        </div>
+      )}
+
+      {type === "dateRange" && (
+        <div className="relative flex flex-1 items-center gap-2">
+          <span
+            className={cn(
+              "flex-1 cursor-pointer truncate text-[14px] font-medium",
+              checkIn ? "text-neutral-900" : "text-neutral-500"
+            )}
+            onClick={() => openPicker(checkInRef)}
+          >
+            {checkIn ? formatDate(checkIn) : rangeStartLabel || placeholder}
+          </span>
+          <span className="shrink-0 text-neutral-300">–</span>
+          <span
+            className={cn(
+              "flex-1 cursor-pointer truncate text-[14px] font-medium",
+              checkOut ? "text-neutral-900" : "text-neutral-500"
+            )}
+            onClick={() => openPicker(checkOutRef)}
+          >
+            {checkOut ? formatDate(checkOut) : rangeEndLabel || placeholder}
+          </span>
+          <input
+            ref={checkInRef}
+            type="date"
+            value={checkIn}
+            max={checkOut || undefined}
+            onChange={(event) => {
+              const nextCheckIn = event.target.value;
+              onCheckInChange(nextCheckIn);
+              if (checkOut && checkOut < nextCheckIn) {
+                onCheckOutChange("");
+              }
+              requestAnimationFrame(() => openPicker(checkOutRef));
+            }}
+            aria-label="Check-in date"
+            className={hiddenDateInputClass}
+          />
+          <input
+            ref={checkOutRef}
+            type="date"
+            value={checkOut}
+            min={checkIn || undefined}
+            onChange={(event) => onCheckOutChange(event.target.value)}
+            aria-label="Check-out date"
+            className={hiddenDateInputClass}
+          />
+        </div>
+      )}
+
+      {type === "select" && (
+        <select defaultValue="" aria-label={placeholder} className={cn(controlClass, "appearance-none")}>
+          <option value="" disabled>
+            {placeholder}
+          </option>
+          {options?.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      )}
+
+      {hasChevron && type === "select" && <ChevronDown className="size-4 shrink-0 text-neutral-400" />}
+    </div>
+  );
+}
+
+function LocationField({
+  icon,
+  placeholder,
+  value,
+  onChange,
+}: {
+  icon: React.ReactNode;
+  placeholder?: string;
+  value?: string;
+  onChange?: (value: string) => void;
+}) {
+  const [internalQuery, setInternalQuery] = useState("");
+  const [open, setOpen] = useState(false);
+  const containerRef = useClickOutside<HTMLDivElement>(() => setOpen(false));
+
+  const isControlled = value !== undefined && onChange !== undefined;
+  const query = isControlled ? value : internalQuery;
+  const setQuery = isControlled ? onChange : setInternalQuery;
+
+  const trimmedQuery = query.trim().toLowerCase();
+  const matches =
+    trimmedQuery.length >= 2
+      ? destinationSuggestions.filter((item) => item.city.toLowerCase().includes(trimmedQuery))
+      : [];
+
+  return (
+    <div ref={containerRef} className="relative flex-1">
+      <div className={fieldContainerClass}>
+        <span className="shrink-0 text-neutral-500">{icon}</span>
+        <input
+          type="text"
+          value={query}
+          placeholder={placeholder}
+          onChange={(event) => {
+            const nextValue = event.target.value;
+            setQuery(nextValue);
+            setOpen(nextValue.trim().length >= 2);
+          }}
+          onFocus={() => {
+            if (query.trim().length >= 2) setOpen(true);
+          }}
+          className={controlClass}
+        />
+      </div>
+
+      {open && matches.length > 0 && (
+        <div className="absolute left-0 right-0 top-[calc(100%+8px)] z-20 max-h-[300px] overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+          {matches.map((item, index) => (
+            <button
+              key={`${item.city}-${item.region}-${index}`}
+              type="button"
+              onClick={() => {
+                setQuery(item.city);
+                setOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-colors hover:bg-neutral-100"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-neutral-100 text-neutral-400">
+                <Building2 className="size-[18px]" />
+              </span>
+              <span className="min-w-0">
+                <span className="block truncate text-[14px] font-semibold text-neutral-900">
+                  {item.city}
+                </span>
+                <span className="block truncate text-[13px] text-neutral-500">{item.region}</span>
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GuestsField({
+  icon,
+  rooms,
+  onRoomsChange,
+}: {
+  icon: React.ReactNode;
+  rooms: RoomConfig[];
+  onRoomsChange: (updater: (prev: RoomConfig[]) => RoomConfig[]) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const containerRef = useClickOutside<HTMLDivElement>(() => setOpen(false));
+
+  const totalAdults = rooms.reduce((sum, room) => sum + room.adults, 0);
+  const totalChildren = rooms.reduce((sum, room) => sum + room.children, 0);
+  const summary = `${totalAdults} Adult${totalAdults === 1 ? "" : "s"}${
+    totalChildren > 0 ? `, ${totalChildren} Child${totalChildren === 1 ? "" : "ren"}` : ""
+  }, ${rooms.length} Room${rooms.length === 1 ? "" : "s"}`;
+
+  function updateRoom(index: number, key: "adults" | "children", delta: number) {
+    onRoomsChange((prev) =>
+      prev.map((room, i) => {
+        if (i !== index) return room;
+        const max = key === "adults" ? MAX_ADULTS : MAX_CHILDREN;
+        const min = key === "adults" ? 1 : 0;
+        return { ...room, [key]: Math.min(max, Math.max(min, room[key] + delta)) };
+      })
+    );
+  }
+
+  function addRoom() {
+    onRoomsChange((prev) => (prev.length >= MAX_ROOMS ? prev : [...prev, { adults: 1, children: 0 }]));
+  }
+
+  function removeRoom(index: number) {
+    onRoomsChange((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  return (
+    <div ref={containerRef} className="relative flex-1">
+      <button type="button" onClick={() => setOpen((value) => !value)} className={fieldContainerClass}>
+        <span className="shrink-0 text-neutral-500">{icon}</span>
+        <span className="flex-1 truncate text-left text-[14px] font-medium text-neutral-900">{summary}</span>
+        <ChevronDown
+          className={cn("size-4 shrink-0 text-neutral-400 transition-transform", open && "rotate-180")}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-[calc(100%+8px)] z-20 w-[320px] rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+          <div className="flex max-h-[320px] flex-col gap-5 overflow-y-auto pr-1">
+            {rooms.map((room, index) => (
+              <div key={index}>
+                <div className="flex items-center justify-between">
+                  <p className="text-[15px] font-semibold text-neutral-900">Room {index + 1}</p>
+                  {rooms.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeRoom(index)}
+                      className="text-[13px] font-medium text-neutral-400 transition-colors hover:text-neutral-600"
+                    >
+                      Remove
+                    </button>
+                  )}
+                </div>
+
+                <div className="mt-3 grid grid-cols-2 gap-4">
+                  <GuestCounter
+                    label="Adults"
+                    hint="+12 Y"
+                    value={room.adults}
+                    onDecrease={() => updateRoom(index, "adults", -1)}
+                    onIncrease={() => updateRoom(index, "adults", 1)}
+                    disableDecrease={room.adults <= 1}
+                    disableIncrease={room.adults >= MAX_ADULTS}
+                  />
+                  <GuestCounter
+                    label="Children"
+                    hint="+2 Y"
+                    value={room.children}
+                    onDecrease={() => updateRoom(index, "children", -1)}
+                    onIncrease={() => updateRoom(index, "children", 1)}
+                    disableDecrease={room.children <= 0}
+                    disableIncrease={room.children >= MAX_CHILDREN}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
+            <button
+              type="button"
+              onClick={addRoom}
+              disabled={rooms.length >= MAX_ROOMS}
+              className="rounded-xl border border-neutral-200 px-4 py-2.5 text-[14px] font-semibold text-neutral-700 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              + Add Room
+            </button>
+            <button
+              type="button"
+              onClick={() => setOpen(false)}
+              className="rounded-xl bg-brand-lime px-6 py-2.5 text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
+            >
+              Done
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function GuestCounter({
+  label,
+  hint,
+  value,
+  onDecrease,
+  onIncrease,
+  disableDecrease,
+  disableIncrease,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  disableDecrease?: boolean;
+  disableIncrease?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-[14px] font-medium text-neutral-900">{label}</p>
+      <p className="text-[12px] text-neutral-400">{hint}</p>
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onDecrease}
+          disabled={disableDecrease}
+          className="flex size-8 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Minus className="size-3.5" />
+        </button>
+        <span className="w-5 text-center text-[14px] font-semibold text-neutral-900">
+          {String(value).padStart(2, "0")}
+        </span>
+        <button
+          type="button"
+          onClick={onIncrease}
+          disabled={disableIncrease}
+          className="flex size-8 items-center justify-center rounded-full bg-neutral-900 text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const TRIP_TYPES = [
+  { value: "oneway", label: "One way" },
+  { value: "roundtrip", label: "Round Trip" },
+  { value: "multicity", label: "Multi City" },
+] as const;
+
+const TRAVEL_CLASSES = ["Economy", "Premium Economy", "Business", "First"];
+const MAX_PASSENGERS = 9;
+
+function FlightSearchPanel({
+  className,
+  initialValues,
+}: {
+  className?: string;
+  initialValues?: FlightSearchInitialValues;
+}) {
+  const router = useRouter();
+  const [isSearching, startSearchTransition] = useTransition();
+  const [tripType, setTripType] = useState<(typeof TRIP_TYPES)[number]["value"]>(
+    initialValues?.tripType ?? "oneway"
+  );
+  const [travelClass, setTravelClass] = useState(initialValues?.travelClass ?? TRAVEL_CLASSES[0]);
+  const [passengers, setPassengers] = useState(initialValues?.passengers ?? 1);
+  const [from, setFrom] = useState(initialValues?.from ?? "");
+  const [to, setTo] = useState(initialValues?.to ?? "");
+  const [isPassengersOpen, setIsPassengersOpen] = useState(false);
+  const [isClassOpen, setIsClassOpen] = useState(false);
+  const [departureDate, setDepartureDate] = useState(initialValues?.departureDate ?? "");
+  const [returnDate, setReturnDate] = useState(initialValues?.returnDate ?? "");
+  const [directFlightOnly, setDirectFlightOnly] = useState(initialValues?.directFlightOnly ?? false);
+  const passengersRef = useClickOutside<HTMLDivElement>(() => setIsPassengersOpen(false));
+  const classRef = useClickOutside<HTMLDivElement>(() => setIsClassOpen(false));
+  const departureRef = useRef<HTMLInputElement>(null);
+  const returnRef = useRef<HTMLInputElement>(null);
+
+  const isRoundTrip = tripType === "roundtrip";
+
+  function handleSearch() {
+    const params = new URLSearchParams();
+    params.set("tripType", tripType);
+    if (from.trim()) params.set("from", from.trim());
+    if (to.trim()) params.set("to", to.trim());
+    if (departureDate) params.set("departureDate", departureDate);
+    if (isRoundTrip && returnDate) params.set("returnDate", returnDate);
+    params.set("travelClass", travelClass);
+    params.set("passengers", String(passengers));
+    if (directFlightOnly) params.set("directFlightOnly", "1");
+
+    startSearchTransition(() => {
+      router.push(`/flights?${params.toString()}`);
+    });
+  }
+
+  return (
+    <div className={cn("rounded-2xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)]", className)}>
+      <div className="flex flex-wrap items-center justify-between gap-3 px-3 pb-2 pt-3 sm:px-4 sm:pb-3 sm:pt-4">
+        <div className="flex flex-wrap items-center gap-2">
+          {TRIP_TYPES.map((type) => (
+            <button
+              key={type.value}
+              type="button"
+              onClick={() => setTripType(type.value)}
+              className={cn(
+                "rounded-full px-4 py-2 text-[14px] font-medium transition-colors",
+                tripType === type.value
+                  ? "bg-[#EBF86C] text-[#2C341D]"
+                  : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
+              )}
+            >
+              {type.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-5">
+          <div ref={classRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsClassOpen((value) => !value)}
+              className="flex items-center gap-1 text-[14px] font-medium text-neutral-800"
+            >
+              {travelClass}
+              <ChevronDown
+                className={cn(
+                  "size-4 text-neutral-400 transition-transform",
+                  isClassOpen && "rotate-180"
+                )}
+              />
+            </button>
+
+            {isClassOpen && (
+              <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[180px] rounded-2xl border border-neutral-100 bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+                {TRAVEL_CLASSES.map((option) => (
+                  <button
+                    key={option}
+                    type="button"
+                    onClick={() => {
+                      setTravelClass(option);
+                      setIsClassOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[14px] font-medium transition-colors hover:bg-neutral-100",
+                      travelClass === option ? "text-brand-blue" : "text-neutral-700"
+                    )}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div ref={passengersRef} className="relative">
+            <button
+              type="button"
+              onClick={() => setIsPassengersOpen((value) => !value)}
+              className="flex items-center gap-1 text-[14px] font-medium text-neutral-800"
+            >
+              {passengers} Passenger{passengers === 1 ? "" : "s"}
+              <ChevronDown
+                className={cn(
+                  "size-4 text-neutral-400 transition-transform",
+                  isPassengersOpen && "rotate-180"
+                )}
+              />
+            </button>
+
+            {isPassengersOpen && (
+              <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[240px] rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[14px] font-medium text-neutral-900">Passengers</span>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setPassengers((value) => Math.max(1, value - 1))}
+                      disabled={passengers <= 1}
+                      className="flex size-8 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Minus className="size-3.5" />
+                    </button>
+                    <span className="w-5 text-center text-[14px] font-semibold text-neutral-900">
+                      {String(passengers).padStart(2, "0")}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setPassengers((value) => Math.min(MAX_PASSENGERS, value + 1))}
+                      disabled={passengers >= MAX_PASSENGERS}
+                      className="flex size-8 items-center justify-center rounded-full bg-neutral-900 text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPassengersOpen(false)}
+                  className="mt-4 flex h-10 w-full items-center justify-center rounded-xl bg-brand-lime text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
+                >
+                  Done
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-col gap-2 px-3 pb-3 pt-1 sm:px-4 sm:pb-4 sm:pt-2 lg:flex-row lg:items-center">
+        <LocationField
+          icon={<PlaneTakeoff className="size-[18px]" />}
+          placeholder="From"
+          value={from}
+          onChange={setFrom}
+        />
+        <LocationField
+          icon={<PlaneLanding className="size-[18px]" />}
+          placeholder="To"
+          value={to}
+          onChange={setTo}
+        />
+
+        <div className={fieldContainerClass}>
+          <span className="shrink-0 text-neutral-500">
+            <Calendar className="size-[18px]" />
+          </span>
+          <div className="relative flex-1 cursor-pointer" onClick={() => openPicker(departureRef)}>
+            <span
+              className={cn(
+                "truncate text-[14px] font-medium",
+                departureDate ? "text-neutral-900" : "text-neutral-500"
+              )}
+            >
+              {departureDate ? formatDate(departureDate) : "Departure Date"}
+            </span>
+            <input
+              ref={departureRef}
+              type="date"
+              value={departureDate}
+              min={new Date().toISOString().slice(0, 10)}
+              onChange={(event) => {
+                const nextDeparture = event.target.value;
+                setDepartureDate(nextDeparture);
+                if (returnDate && returnDate < nextDeparture) {
+                  setReturnDate("");
+                }
+              }}
+              aria-label="Departure date"
+              className={hiddenDateInputClass}
+            />
+          </div>
+        </div>
+
+        <div className={cn(fieldContainerClass, !isRoundTrip && "opacity-50")}>
+          <span className="shrink-0 text-neutral-500">
+            <Calendar className="size-[18px]" />
+          </span>
+          <div
+            className={cn("relative flex-1", isRoundTrip ? "cursor-pointer" : "cursor-not-allowed")}
+            onClick={() => isRoundTrip && openPicker(returnRef)}
+          >
+            <span
+              className={cn(
+                "truncate text-[14px] font-medium",
+                returnDate ? "text-neutral-900" : "text-neutral-500"
+              )}
+            >
+              {returnDate ? formatDate(returnDate) : "Book a round trip"}
+            </span>
+            <input
+              ref={returnRef}
+              type="date"
+              value={returnDate}
+              min={departureDate || new Date().toISOString().slice(0, 10)}
+              disabled={!isRoundTrip}
+              onChange={(event) => setReturnDate(event.target.value)}
+              aria-label="Return date"
+              className={hiddenDateInputClass}
+            />
+          </div>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleSearch}
+          disabled={isSearching}
+          className="flex h-[65px] shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          {isSearching ? (
+            <Loader2 className="size-[18px] animate-spin" />
+          ) : (
+            <Search className="size-[18px]" />
+          )}
+          {isSearching ? "Searching..." : "Search Flight"}
+        </button>
+      </div>
+
+      <div className="px-3 pb-3 sm:px-4 sm:pb-4">
+        <label className="flex items-center gap-2 text-[14px] text-neutral-700">
+          <input
+            type="checkbox"
+            checked={directFlightOnly}
+            onChange={(event) => setDirectFlightOnly(event.target.checked)}
+            className="size-4 rounded border-neutral-300 text-brand-blue focus:ring-brand-blue"
+          />
+          Direct Flight Only
+        </label>
+      </div>
+    </div>
+  );
+}
