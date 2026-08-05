@@ -27,7 +27,7 @@ export function WhyBookHighlight() {
       <Container>
         <div
           ref={ref}
-          className="grid gap-10 rounded-[32px] bg-[#E7ECDF] p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-14 lg:p-14"
+          className="grid gap-10 rounded-[32px] bg-[#E7F8EC] p-6 sm:p-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)] lg:gap-14 lg:p-14"
         >
           <div
             className={cn(
@@ -61,7 +61,7 @@ export function WhyBookHighlight() {
                   key={item.id}
                   style={{ transitionDelay: `${index * 120}ms` }}
                   className={cn(
-                    "rounded-2xl bg-white p-5 transition-all duration-700 ease-out",
+                    "rounded-2xl bg-white p-5 transition-all duration-700 ease-out border border-[#0000001A] shadow-[0_10px_30px_rgba(0,0,0,0.06)] hover:-translate-y-1.5 hover:shadow-[0_20px_40px_rgba(0,0,0,0.14)]",
                     isInView ? "translate-y-0 opacity-100" : "translate-y-8 opacity-0"
                   )}
                 >

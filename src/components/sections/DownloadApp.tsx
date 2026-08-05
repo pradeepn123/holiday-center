@@ -48,13 +48,13 @@ export function DownloadApp() {
               </div>
             </div>
 
-            <div className="flex flex-col items-center justify-self-start">
+            <div className="flex flex-col items-center justify-self-center sm:justify-self-start">
               <Image
                 src="/assets/icons/app_qr_code.svg"
                 alt="QR code to download the Holidays Center app"
                 width={150}
                 height={153}
-                className="size-[150px] shrink-0 rounded-2xl bg-white p-3"
+                className="size-[100px] sm:size-[150px] shrink-0 rounded-2xl bg-white p-3"
               />
               <p className="mt-4 text-center text-[15px] leading-relaxed text-white/90">
                 Scan the QR code
@@ -63,7 +63,7 @@ export function DownloadApp() {
               </p>
             </div>
 
-            <div className="relative mx-auto w-full max-w-[300px] self-end justify-self-center">
+            <div className="relative mx-auto w-full max-w-[200px] sm:max-w-[250px] self-end justify-self-center">
               <Image
                 src="/assets/images/app-image.svg"
                 alt="Holidays Center app preview"

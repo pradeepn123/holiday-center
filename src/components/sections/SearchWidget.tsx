@@ -1,6 +1,7 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
   Building2,
@@ -234,7 +235,7 @@ export function SearchWidget({
                 aria-selected={isActive}
                 onClick={() => setActiveCategory(category.value)}
                 className={cn(
-                  "rounded-full px-5 py-2.5 text-[15px] font-medium transition-colors",
+                  "shrink-0 whitespace-nowrap rounded-full px-5 py-1 lg:py-2.5 text-[15px] font-medium transition-colors",
                   isActive ? "bg-brand-blue text-white" : "text-neutral-700 hover:bg-neutral-100"
                 )}
               >
@@ -331,7 +332,7 @@ function SearchField({
   }
 
   return (
-    <div className={fieldContainerClass}>
+    <div className={cn(fieldContainerClass, type === "select" && "lg:flex-[0.7]")}>
       <span className="shrink-0 text-neutral-500">{icon}</span>
 
       {type === "text" && <input type="text" placeholder={placeholder} className={controlClass} />}
@@ -450,7 +451,7 @@ function LocationField({
       : [];
 
   return (
-    <div ref={containerRef} className="relative flex-1">
+    <div ref={containerRef} className="relative flex-1 lg:flex-[1.6]">
       <div className={fieldContainerClass}>
         <span className="shrink-0 text-neutral-500">{icon}</span>
         <input
@@ -508,7 +509,47 @@ function GuestsField({
   onRoomsChange: (updater: (prev: RoomConfig[]) => RoomConfig[]) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const containerRef = useClickOutside<HTMLDivElement>(() => setOpen(false));
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number } | null>(
+    null
+  );
+  const containerRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  function computePanelPosition() {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const width = Math.min(320, window.innerWidth - 32);
+    const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
+    setPanelStyle({ top: rect.bottom + 8, left, width });
+  }
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target) || panelRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("scroll", computePanelPosition, true);
+    window.addEventListener("resize", computePanelPosition);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("scroll", computePanelPosition, true);
+      window.removeEventListener("resize", computePanelPosition);
+    };
+  }, [open]);
+
+  function toggleOpen() {
+    if (!open) {
+      computePanelPosition();
+    }
+    setOpen((value) => !value);
+  }
 
   const totalAdults = rooms.reduce((sum, room) => sum + room.adults, 0);
   const totalChildren = rooms.reduce((sum, room) => sum + room.children, 0);
@@ -537,7 +578,7 @@ function GuestsField({
 
   return (
     <div ref={containerRef} className="relative flex-1">
-      <button type="button" onClick={() => setOpen((value) => !value)} className={fieldContainerClass}>
+      <button type="button" onClick={toggleOpen} className={fieldContainerClass}>
         <span className="shrink-0 text-neutral-500">{icon}</span>
         <span className="flex-1 truncate text-left text-[14px] font-medium text-neutral-900">{summary}</span>
         <ChevronDown
@@ -545,11 +586,22 @@ function GuestsField({
         />
       </button>
 
-      {open && (
-        <div className="absolute left-0 top-[calc(100%+8px)] z-20 w-[320px] rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-          <div className="flex max-h-[320px] flex-col gap-5 overflow-y-auto pr-1">
+      {open &&
+        panelStyle &&
+        createPortal(
+          <div
+            ref={panelRef}
+            style={{
+              position: "fixed",
+              top: panelStyle.top,
+              left: panelStyle.left,
+              width: panelStyle.width,
+            }}
+            className="z-[100] rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+          >
+          <div className="flex max-h-[320px] flex-col divide-y divide-neutral-100 overflow-y-auto pr-1">
             {rooms.map((room, index) => (
-              <div key={index}>
+              <div key={index} className={cn(index === 0 ? "pb-5" : "py-5")}>
                 <div className="flex items-center justify-between">
                   <p className="text-[15px] font-semibold text-neutral-900">Room {index + 1}</p>
                   {rooms.length > 1 && (
@@ -604,8 +656,9 @@ function GuestsField({
               Done
             </button>
           </div>
-        </div>
-      )}
+        </div>,
+          document.body
+        )}
     </div>
   );
 }

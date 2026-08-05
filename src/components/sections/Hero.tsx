@@ -5,7 +5,12 @@ import { HeroGallery } from "./HeroGallery";
 
 export function Hero() {
   return (
-    <section className="relative bg-[#EBEFEC] pb-2 lg:pb-4">
+    <section className="relative bg-[#EBEFEC] pb-2 lg:pb-4 overflow-hidden sm:overflow-visible">
+      <div className="absolute inset-0 lg:hidden left-[75%] -top-[100px] w-full rotate-[345deg]" aria-hidden="true">
+        <HeroGallery fill />
+        <div className="absolute inset-0 bg-[#EBEFEC]/36" />
+      </div>
+
       <Image
         src="/assets/icons/shape-4.svg"
         alt=""
@@ -47,10 +52,12 @@ export function Hero() {
           </p>
         </div>
 
-        <HeroGallery />
+        <div className="hidden lg:block">
+          <HeroGallery />
+        </div>
       </Container>
 
-      <Container className="relative z-10 -mt-10 -mb-10 lg:-mt-32 lg:-mb-16">
+      <Container className="relative z-10 mt-6 lg:-mt-32 lg:-mb-16">
         <SearchWidget />
       </Container>
     </section>

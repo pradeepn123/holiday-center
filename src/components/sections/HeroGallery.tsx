@@ -34,9 +34,14 @@ const columns: { images: string[]; direction: "up" | "down" }[] = [
   },
 ];
 
-export function HeroGallery() {
+export function HeroGallery({ fill = false }: { fill?: boolean }) {
   return (
-    <div className="relative h-[560px] w-full overflow-hidden lg:h-[620px]">
+    <div
+      className={cn(
+        "relative w-full overflow-hidden",
+        fill ? "h-full" : "h-[560px] lg:h-[620px]"
+      )}
+    >
       <div className="grid h-full grid-cols-3 gap-4 lg:gap-5">
         {columns.map((column, columnIndex) => (
           <div key={columnIndex} className="relative overflow-hidden">
