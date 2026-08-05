@@ -86,46 +86,6 @@ body {
   }
 }
 
-@keyframes tile-rotate {
-  0%,
-  100% {
-    transform: rotate(-2.5deg);
-  }
-  50% {
-    transform: rotate(2.5deg);
-  }
-}
-
-.animate-tile-rotate {
-  animation: tile-rotate 3.5s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-tile-rotate {
-    animation: none;
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0) rotate(var(--float-rotate, 0deg));
-  }
-  50% {
-    transform: translateY(-10px) rotate(var(--float-rotate, 0deg));
-  }
-}
-
-.animate-float {
-  animation: float 4.5s ease-in-out infinite;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-float {
-    animation: none;
-  }
-}
-
 @keyframes shake {
   0%,
   92%,

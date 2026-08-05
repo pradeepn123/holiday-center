@@ -37,18 +37,29 @@ function buildGallery(mainImage: string, seedIndex: number): string[] {
   return [mainImage, ...rotated.slice(0, 4)];
 }
 
+function isUsableApiHotel(hotel: ApiHotel): boolean {
+  return (
+    Boolean(hotel.name) &&
+    Boolean(hotel.address) &&
+    Boolean(hotel.country) &&
+    Boolean(hotel.image) &&
+    typeof hotel.price === "number" &&
+    hotel.price > 0
+  );
+}
+
 function mapApiHotel(hotel: ApiHotel, index: number): HotelSearchResult {
   return {
     id: String(hotel.id),
     name: hotel.name,
     address: `${hotel.address}, ${hotel.country}`,
-    rating: hotel.rating,
+    rating: typeof hotel.rating === "number" ? hotel.rating : 0,
     price: hotel.price,
     image: hotel.image,
-    amenities: hotel.amenities,
+    amenities: hotel.amenities ?? [],
     gallery: buildGallery(hotel.image, index),
-    stars: hotel.stars,
-    reviews: hotel.reviews,
+    stars: typeof hotel.stars === "number" ? hotel.stars : undefined,
+    reviews: typeof hotel.reviews === "number" ? hotel.reviews : undefined,
     freeCancellation: hotel.freeCancellation,
   };
 }
@@ -60,7 +71,7 @@ export async function fetchHotels(): Promise<HotelSearchResult[]> {
       throw new Error(`Hotels API responded with ${response.status}`);
     }
     const data: ApiHotel[] = await response.json();
-    return data.map(mapApiHotel);
+    return data.filter(isUsableApiHotel).map(mapApiHotel);
   } catch (error) {
     console.error("Could not reach hotels API, falling back to local data.", error);
     return fallbackHotels;

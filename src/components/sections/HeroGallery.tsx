@@ -47,22 +47,17 @@ export function HeroGallery() {
               )}
             >
               {[...column.images, ...column.images].map((src, index) => (
-                <div key={`${columnIndex}-${index}`} className="h-[150px] w-full shrink-0 lg:h-[220px]">
-                  <div
-                    className="animate-tile-rotate relative size-full overflow-hidden rounded-[16px] lg:rounded-[48px]"
-                    style={{
-                      animationDelay: `${(columnIndex + index) * 0.3}s`,
-                      animationDirection: index % 2 === 0 ? "normal" : "reverse",
-                    }}
-                  >
-                    <Image
-                      src={src}
-                      alt=""
-                      fill
-                      sizes="(min-width: 1024px) 20vw, 30vw"
-                      className="object-cover"
-                    />
-                  </div>
+                <div
+                  key={`${columnIndex}-${index}`}
+                  className="relative h-[150px] w-full shrink-0 overflow-hidden rounded-[16px] lg:h-[220px] lg:rounded-[48px]"
+                >
+                  <Image
+                    src={src}
+                    alt=""
+                    fill
+                    sizes="(min-width: 1024px) 20vw, 30vw"
+                    className="object-cover"
+                  />
                 </div>
               ))}
             </div>

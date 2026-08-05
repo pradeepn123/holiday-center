@@ -2,7 +2,6 @@ import Image from "next/image";
 import { Container } from "@/components/ui/Container";
 import { SearchWidget } from "./SearchWidget";
 import { HeroGallery } from "./HeroGallery";
-import { MobileGalleryShowcase } from "./MobileGalleryShowcase";
 
 export function Hero() {
   return (
@@ -48,17 +47,11 @@ export function Hero() {
           </p>
         </div>
 
-        <div className="hidden lg:block">
-          <HeroGallery />
-        </div>
+        <HeroGallery />
       </Container>
 
-      <Container className="relative z-10 mt-6 lg:-mt-32 lg:-mb-16">
+      <Container className="relative z-10 -mt-10 -mb-10 lg:-mt-32 lg:-mb-16">
         <SearchWidget />
-      </Container>
-
-      <Container>
-        <MobileGalleryShowcase />
       </Container>
     </section>
   );
