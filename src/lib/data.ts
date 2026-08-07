@@ -1,10 +1,14 @@
 import type {
+  ActivityResult,
   Destination,
   FaqItem,
   FooterLinkGroup,
   HotelRoom,
   HotelSearchResult,
   SearchCategory,
+  SportsFixture,
+  SportsTicketCategory,
+  SportsTicketListing,
   Testimonial,
   TourPackage,
   WhyBookHighlight,
@@ -21,11 +25,36 @@ export const searchCategories: SearchCategory[] = [
   { label: "Transfers", value: "transfers" },
 ];
 
+export const packageRegions = ["Asia", "Middle East", "Europe", "Oceania"];
+
+export const packageCountries = [
+  "Azerbaijan",
+  "Georgia",
+  "Kazakhstan",
+  "Kuwait",
+  "Kyrgyzstan",
+  "Saudi Arabia",
+  "Thailand",
+];
+
+export const packageActivities = [
+  "Adventure",
+  "Archaeology",
+  "Beach",
+  "Bird Watching",
+  "Boat Tour",
+  "Camping",
+  "Cultural",
+];
+
 export const tourPackages: TourPackage[] = [
   {
     id: "gold-coast",
     title: "Australia – Gold Coast",
     place: "Gold Coast",
+    region: "Oceania",
+    country: "Australia",
+    activities: ["Beach", "Adventure"],
     days: 2,
     nights: 3,
     fromPrice: 2850,
@@ -38,6 +67,9 @@ export const tourPackages: TourPackage[] = [
     id: "dubai",
     title: "UAE – Dubai",
     place: "Dubai",
+    region: "Middle East",
+    country: "Saudi Arabia",
+    activities: ["Cultural", "Adventure"],
     days: 2,
     nights: 3,
     fromPrice: 3200,
@@ -50,6 +82,9 @@ export const tourPackages: TourPackage[] = [
     id: "paris",
     title: "France – Paris",
     place: "Paris",
+    region: "Europe",
+    country: "Georgia",
+    activities: ["Cultural"],
     days: 2,
     nights: 3,
     fromPrice: 2500,
@@ -62,6 +97,9 @@ export const tourPackages: TourPackage[] = [
     id: "jordan",
     title: "Jordan – Amman & Petra",
     place: "Jordan",
+    region: "Middle East",
+    country: "Kuwait",
+    activities: ["Archaeology", "Cultural"],
     days: 2,
     nights: 3,
     fromPrice: 1900,
@@ -70,7 +108,245 @@ export const tourPackages: TourPackage[] = [
     reviews: 5,
     image: "/assets/images/destination_image3.png",
   },
+  {
+    id: "bali",
+    title: "Indonesia – Bali",
+    place: "Bali",
+    region: "Asia",
+    country: "Thailand",
+    activities: ["Beach", "Cultural"],
+    days: 3,
+    nights: 4,
+    fromPrice: 2100,
+    price: 720,
+    rating: 5,
+    reviews: 5,
+    image: "/assets/images/trending_img_2.png",
+  },
+  {
+    id: "switzerland",
+    title: "Switzerland – Alps",
+    place: "Interlaken",
+    region: "Europe",
+    country: "Kazakhstan",
+    activities: ["Adventure", "Camping"],
+    days: 4,
+    nights: 5,
+    fromPrice: 3600,
+    price: 1450,
+    rating: 5,
+    reviews: 5,
+    image: "/assets/images/moving_bg_img2.png",
+  },
+  {
+    id: "india-fort",
+    title: "India – Gwalior Fort",
+    place: "Gwalior",
+    region: "Asia",
+    country: "Kyrgyzstan",
+    activities: ["Archaeology", "Cultural"],
+    days: 2,
+    nights: 3,
+    fromPrice: 1600,
+    price: 540,
+    rating: 5,
+    reviews: 5,
+    image: "/assets/images/moving_bg_img4.png",
+  },
+  {
+    id: "kerala",
+    title: "India – Kerala Backwaters",
+    place: "Kerala",
+    region: "Asia",
+    country: "Azerbaijan",
+    activities: ["Boat Tour", "Bird Watching"],
+    days: 3,
+    nights: 4,
+    fromPrice: 1800,
+    price: 610,
+    rating: 5,
+    reviews: 5,
+    image: "/assets/images/moving_bg_img9.png",
+  },
+  {
+    id: "london",
+    title: "United Kingdom – London",
+    place: "London",
+    region: "Europe",
+    country: "Georgia",
+    activities: ["Cultural"],
+    days: 3,
+    nights: 4,
+    fromPrice: 2900,
+    price: 990,
+    rating: 5,
+    reviews: 5,
+    image: "/assets/images/trending_img_3.png",
+  },
 ];
+
+const PACKAGE_GALLERY_POOL = [
+  "/assets/images/trending_img_1.png",
+  "/assets/images/trending_img_2.png",
+  "/assets/images/trending_img_3.png",
+  "/assets/images/destination_image1.png",
+  "/assets/images/destination_image2.png",
+  "/assets/images/destination_image3.png",
+  "/assets/images/destination_image4.png",
+  "/assets/images/moving_bg_img3.png",
+  "/assets/images/moving_bg_img7.png",
+];
+
+export function getPackageGallery(pkg: TourPackage): string[] {
+  const others = PACKAGE_GALLERY_POOL.filter((src) => src !== pkg.image);
+  const offset = pkg.id.length % others.length;
+  const rotated = [...others.slice(offset), ...others.slice(0, offset)];
+  return [pkg.image, ...rotated.slice(0, 4)];
+}
+
+export function getTourPackageById(id: string): TourPackage | undefined {
+  return tourPackages.find((pkg) => pkg.id === id);
+}
+
+export const sportsFixtures: SportsFixture[] = [
+  {
+    id: "aut-isr",
+    label: "Austria vs Israel",
+    homeTeam: "Austria",
+    homeCode: "AUT",
+    homeFlag: "🇦🇹",
+    awayTeam: "Israel",
+    awayCode: "ISR",
+    awayFlag: "🇮🇱",
+    date: "Thu, 24 Sep 2026",
+    time: "08:45 PM",
+    tournament: "FIFA World Cup 2026 Qualifiers",
+    venue: "Raiffeisen Arena ex Linzer Stadion (Auf der Gugl)",
+    venueAddress: "Ziegeleistraße, 4020 Linz",
+    city: "Linz",
+    country: "Austria",
+  },
+  {
+    id: "aut-kos",
+    label: "Austria vs Kosovo",
+    homeTeam: "Austria",
+    homeCode: "AUT",
+    homeFlag: "🇦🇹",
+    awayTeam: "Kosovo",
+    awayCode: "KOS",
+    awayFlag: "🇽🇰",
+    date: "Sun, 27 Sep 2026",
+    time: "06:00 PM",
+    tournament: "FIFA World Cup 2026 Qualifiers",
+    venue: "Raiffeisen Arena ex Linzer Stadion (Auf der Gugl)",
+    venueAddress: "Ziegeleistraße, 4020 Linz",
+    city: "Linz",
+    country: "Austria",
+  },
+  {
+    id: "irl-aut",
+    label: "Republic of Ireland vs Austria",
+    homeTeam: "Republic of Ireland",
+    homeCode: "IRL",
+    homeFlag: "🇮🇪",
+    awayTeam: "Austria",
+    awayCode: "AUT",
+    awayFlag: "🇦🇹",
+    date: "Wed, 30 Sep 2026",
+    time: "07:30 PM",
+    tournament: "FIFA World Cup 2026 Qualifiers",
+    venue: "Aviva Stadium",
+    venueAddress: "Lansdowne Road, Dublin 4",
+    city: "Dublin",
+    country: "Ireland",
+  },
+  {
+    id: "kos-aut",
+    label: "Kosovo vs Austria",
+    homeTeam: "Kosovo",
+    homeCode: "KOS",
+    homeFlag: "🇽🇰",
+    awayTeam: "Austria",
+    awayCode: "AUT",
+    awayFlag: "🇦🇹",
+    date: "Sat, 03 Oct 2026",
+    time: "05:00 PM",
+    tournament: "FIFA World Cup 2026 Qualifiers",
+    venue: "Fadil Vokrri Stadium",
+    venueAddress: "Rr. Nena Tereze, 10000 Pristina",
+    city: "Pristina",
+    country: "Kosovo",
+  },
+  {
+    id: "isr-aut",
+    label: "Israel vs Austria",
+    homeTeam: "Israel",
+    homeCode: "ISR",
+    homeFlag: "🇮🇱",
+    awayTeam: "Austria",
+    awayCode: "AUT",
+    awayFlag: "🇦🇹",
+    date: "Tue, 06 Oct 2026",
+    time: "08:00 PM",
+    tournament: "FIFA World Cup 2026 Qualifiers",
+    venue: "Bloomfield Stadium",
+    venueAddress: "371 Levanon St, Tel Aviv",
+    city: "Tel Aviv",
+    country: "Israel",
+  },
+];
+
+export const sportsTeams = [
+  { code: "AUT", name: "Austria", flag: "🇦🇹" },
+  { code: "ISR", name: "Israel", flag: "🇮🇱" },
+  { code: "KOS", name: "Kosovo", flag: "🇽🇰" },
+  { code: "IRL", name: "Ireland", flag: "🇮🇪" },
+];
+
+export const sportsTicketListings: SportsTicketListing[] = sportsFixtures.flatMap((fixture) =>
+  Array.from({ length: 6 }, (_, index) => ({
+    id: `${fixture.id}-${index + 1}`,
+    fixtureId: fixture.id,
+    price: 157,
+    guaranteed: true,
+  }))
+);
+
+export function getSportsFixtureById(id: string): SportsFixture | undefined {
+  return sportsFixtures.find((fixture) => fixture.id === id);
+}
+
+export function getSportsTicketCategories(fixtureId: string): SportsTicketCategory[] {
+  return [
+    {
+      id: `${fixtureId}-short-1`,
+      fixtureId,
+      name: "Short Side",
+      grouping: "(All Together)",
+      price: 157,
+      ticketsAvailable: 4,
+      offlineStock: true,
+    },
+    {
+      id: `${fixtureId}-short-2`,
+      fixtureId,
+      name: "Short Side",
+      grouping: "(All Together)",
+      price: 157,
+      ticketsAvailable: 4,
+      offlineStock: true,
+    },
+    {
+      id: `${fixtureId}-long-1`,
+      fixtureId,
+      name: "Long Side",
+      grouping: "(All Together)",
+      price: 205,
+      ticketsAvailable: 2,
+      offlineStock: true,
+    },
+  ];
+}
 
 export const popularDestinations: Destination[] = [
   {
@@ -405,5 +681,49 @@ export const contactPhones = [
   { label: "USA", value: "+1 725 666 8484" },
   { label: "Canada", value: "+1 778 654 6544" },
 ];
+
+export const activityTypeFilters = [
+  "Red dunes safari- private tour",
+  "Private safari",
+  "Shared tour",
+  "Private tour",
+  "Private tour",
+  "Saudi Arabia",
+  "3 Days pass",
+];
+
+export const activityDurationTypes = ["Full day", "Half-day afternoon", "Half-day morning", "Evening"];
+
+const ACTIVITY_IMAGE_POOL = [
+  "/assets/images/trending_img_1.png",
+  "/assets/images/trending_img_2.png",
+  "/assets/images/trending_img_3.png",
+  "/assets/images/destination_image1.png",
+  "/assets/images/destination_image2.png",
+  "/assets/images/destination_image3.png",
+  "/assets/images/destination_image4.png",
+  "/assets/images/moving_bg_img3.png",
+  "/assets/images/moving_bg_img7.png",
+  "/assets/images/moving_bg_img5.png",
+];
+
+export const activities: ActivityResult[] = ACTIVITY_IMAGE_POOL.map((image, index) => ({
+  id: `activity-${index + 1}`,
+  title: "Skyline Luge Sentosa Tickets With Skyrise Singapore",
+  location: "Singapore",
+  durationLabel: "6 hours - 10 hours",
+  rating: 5,
+  price: 89,
+  originalPrice: 112,
+  freeCancellation: true,
+  image,
+  gallery: buildGallery(image, index),
+  activityType: activityTypeFilters[index % activityTypeFilters.length],
+  durationType: activityDurationTypes[index % activityDurationTypes.length],
+}));
+
+export function getActivityById(id: string): ActivityResult | undefined {
+  return activities.find((activity) => activity.id === id);
+}
 
 export const contactEmail = "info@holidayscenter.com";

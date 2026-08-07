@@ -2,8 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Container";
 import { SearchWidget } from "@/components/sections/SearchWidget";
-import { HotelFiltersSidebar } from "@/components/hotels/HotelFiltersSidebar";
-import { HotelResultsList } from "@/components/hotels/HotelResultsList";
+import { HotelResultsSection } from "@/components/hotels/HotelResultsSection";
 import { fetchHotels } from "@/lib/hotelsApi";
 
 function firstValue(value: string | string[] | undefined): string {
@@ -42,11 +41,12 @@ export default async function HotelsPage({
   return (
     <>
       <Header />
-      <main className="bg-neutral-50 pb-20">
-        <div className="bg-[#2C341D] py-6">
+      <main className="bg-neutral-50 pb-24 lg:pb-20">
+        <div className="bg-[#2C341D] py-4 sm:py-6">
           <Container>
             <SearchWidget
               showCategoryTabs={false}
+              compactOnMobile
               initialValues={{
                 destination,
                 checkIn,
@@ -59,9 +59,8 @@ export default async function HotelsPage({
           </Container>
         </div>
 
-        <Container className="mt-10 grid grid-cols-1 gap-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-          <HotelFiltersSidebar />
-          <HotelResultsList hotels={hotels} stayParams={stayParams} destination={destination} />
+        <Container className="mt-5 grid grid-cols-1 gap-5 sm:mt-8 lg:mt-10 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-8">
+          <HotelResultsSection hotels={hotels} stayParams={stayParams} destination={destination} />
         </Container>
       </main>
       <Footer />

@@ -29,12 +29,13 @@ export default async function FlightsPage({
   return (
     <>
       <Header />
-      <main className="bg-neutral-50 pb-20">
-        <div className="bg-[#2C341D] py-6">
+      <main className="bg-neutral-50 pb-24 lg:pb-20">
+        <div className="bg-[#2C341D] py-4 sm:py-6">
           <Container>
             <SearchWidget
               showCategoryTabs={false}
               initialCategory="flight"
+              compactOnMobile
               flightInitialValues={{
                 tripType: tripType as "oneway" | "roundtrip" | "multicity",
                 from,
@@ -48,7 +49,7 @@ export default async function FlightsPage({
           </Container>
         </div>
 
-        <Container className="mt-8 grid grid-cols-1 gap-4 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+        <Container className="mt-5 grid grid-cols-1 gap-4 sm:mt-8 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
           <FlightResultsSection
             flights={flights}
             from={from}

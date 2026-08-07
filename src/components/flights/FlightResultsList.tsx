@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { ChevronDown, Coins } from "lucide-react";
+import { ChevronDown, Coins, SlidersHorizontal } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { FlightSearchParams } from "@/lib/flightParams";
 import type { FlightResult } from "@/types";
@@ -21,9 +21,13 @@ type SortValue = (typeof SORT_OPTIONS)[number]["value"];
 export function FlightResultsList({
   flights,
   searchParams,
+  onOpenFilters,
+  activeFilterCount = 0,
 }: {
   flights: FlightResult[];
   searchParams: FlightSearchParams;
+  onOpenFilters?: () => void;
+  activeFilterCount?: number;
 }) {
   const [sortBy, setSortBy] = useState<SortValue>("price");
 
@@ -37,6 +41,22 @@ export function FlightResultsList({
 
   return (
     <div>
+      {onOpenFilters && (
+        <button
+          type="button"
+          onClick={onOpenFilters}
+          className="mb-3 flex h-11 w-full items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-[14px] font-semibold text-neutral-900 shadow-[0_2px_8px_rgba(0,0,0,0.06)] lg:hidden"
+        >
+          <SlidersHorizontal className="size-4" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="flex size-5 items-center justify-center rounded-full bg-brand-blue text-[11px] font-semibold text-white">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
+      )}
+
       <div className="flex w-full gap-3 overflow-x-auto rounded-[8px] border border-neutral-100 bg-white p-2 sm:flex-wrap sm:overflow-visible">
         {SORT_OPTIONS.map(({ value, iconSrc, label, hint }) => {
           const isActive = sortBy === value;

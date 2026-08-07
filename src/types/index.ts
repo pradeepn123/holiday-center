@@ -15,6 +15,9 @@ export type TourPackage = {
   id: string;
   title: string;
   place: string;
+  region: string;
+  country: string;
+  activities: string[];
   days: number;
   nights: number;
   fromPrice: number;
@@ -74,6 +77,56 @@ export type FlightResult = {
   originalPrice?: number;
   refundable: boolean;
   luggage: string;
+};
+
+export type SportsFixture = {
+  id: string;
+  label: string;
+  homeTeam: string;
+  homeCode: string;
+  homeFlag: string;
+  awayTeam: string;
+  awayCode: string;
+  awayFlag: string;
+  date: string;
+  time: string;
+  tournament: string;
+  venue: string;
+  venueAddress: string;
+  city: string;
+  country: string;
+};
+
+export type SportsTicketListing = {
+  id: string;
+  fixtureId: string;
+  price: number;
+  guaranteed: boolean;
+};
+
+export type SportsTicketCategory = {
+  id: string;
+  fixtureId: string;
+  name: string;
+  grouping: string;
+  price: number;
+  ticketsAvailable: number;
+  offlineStock: boolean;
+};
+
+export type ActivityResult = {
+  id: string;
+  title: string;
+  location: string;
+  durationLabel: string;
+  rating: number;
+  price: number;
+  originalPrice: number;
+  freeCancellation: boolean;
+  image: string;
+  gallery: string[];
+  activityType: string;
+  durationType: string;
 };
 
 export type WhyBookHighlight = {

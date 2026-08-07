@@ -39,15 +39,15 @@ export function FlightDetailsModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+      className="fixed inset-0 z-[100] flex items-end justify-center bg-black/40 sm:items-center sm:p-4"
       onClick={onClose}
     >
       <div
         onClick={(event) => event.stopPropagation()}
-        className="flex max-h-[85vh] w-full max-w-[640px] flex-col overflow-hidden rounded-2xl bg-white shadow-2xl"
+        className="flex max-h-[88vh] w-full max-w-[640px] flex-col overflow-hidden rounded-t-3xl bg-white shadow-2xl sm:max-h-[85vh] sm:rounded-2xl"
       >
-        <div className="flex items-center justify-between gap-4 border-b border-neutral-100 px-6 py-4">
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center gap-3 border-b border-neutral-100 px-4 py-3 sm:gap-4 sm:px-6 sm:py-4">
+          <div className="scrollbar-hide flex flex-1 items-center gap-2 overflow-x-auto sm:flex-wrap">
             {TABS.map((tab) => {
               const isActive = tab === activeTab;
               return (
@@ -56,7 +56,7 @@ export function FlightDetailsModal({
                   type="button"
                   onClick={() => setActiveTab(tab)}
                   className={cn(
-                    "rounded-full border px-4 py-1.5 text-[14px] font-medium transition-colors",
+                    "shrink-0 whitespace-nowrap rounded-full border px-4 py-1.5 text-[13px] font-medium transition-colors sm:text-[14px]",
                     isActive
                       ? "border-brand-blue text-brand-blue"
                       : "border-transparent text-neutral-500 hover:text-neutral-700"
@@ -78,7 +78,7 @@ export function FlightDetailsModal({
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-5">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
           {activeTab === "Flight Details" && (
             <div className="flex flex-col gap-6">
               <FlightLegSection leg={result.outbound} label="Departure" />
@@ -95,12 +95,14 @@ export function FlightDetailsModal({
           {activeTab === "Baggage Info" && <BaggageInfoPanel result={result} />}
         </div>
 
-        <div className="flex items-center justify-between gap-4 border-t border-neutral-100 bg-[#F9FAFB] px-6 py-4">
+        <div className="flex items-center justify-between gap-4 border-t border-neutral-100 bg-[#F9FAFB] px-4 py-3 sm:px-6 sm:py-4">
           <div>
             <div className="flex items-baseline gap-2">
-              <p className="text-xl font-bold text-brand-blue">USD {result.price.toFixed(2)}</p>
+              <p className="text-lg font-bold text-brand-blue sm:text-xl">
+                USD {result.price.toFixed(2)}
+              </p>
               {hasDiscount && (
-                <span className="text-[14px] text-neutral-400 line-through">
+                <span className="text-[13px] text-neutral-400 line-through sm:text-[14px]">
                   USD {result.originalPrice!.toFixed(2)}
                 </span>
               )}
@@ -117,7 +119,7 @@ export function FlightDetailsModal({
 
           <Link
             href={bookingHref}
-            className="flex h-11 shrink-0 items-center justify-center rounded-[8px] bg-brand-blue px-6 text-[14px] font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+            className="flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-brand-blue px-6 text-[14px] font-semibold text-white transition-transform active:scale-[0.97] sm:h-11 sm:transition-colors sm:hover:bg-brand-blue-dark sm:active:scale-100"
           >
             Book Now
           </Link>
