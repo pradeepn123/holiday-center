@@ -99,7 +99,15 @@ function FilterSheet({
   );
 }
 
-export function ActivityResultsSection({ activities }: { activities: ActivityResult[] }) {
+export function ActivityResultsSection({
+  activities,
+  adults,
+  childrenCount,
+}: {
+  activities: ActivityResult[];
+  adults: number;
+  childrenCount: number;
+}) {
   const [filters, setFilters] = useState<ActivityFilterState>(createDefaultActivityFilters);
   const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false);
   const results = activities.filter((activity) => activityMatches(activity, filters));
@@ -132,7 +140,12 @@ export function ActivityResultsSection({ activities }: { activities: ActivityRes
         </div>
 
         {results.map((activity) => (
-          <ActivityResultCard key={activity.id} activity={activity} />
+          <ActivityResultCard
+            key={activity.id}
+            activity={activity}
+            adults={adults}
+            childrenCount={childrenCount}
+          />
         ))}
 
         {results.length === 0 && (

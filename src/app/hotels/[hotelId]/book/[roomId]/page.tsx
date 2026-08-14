@@ -44,6 +44,8 @@ export default async function HotelBookingPage({
     children: firstValue(query.children) || undefined,
     rooms: firstValue(query.rooms) || undefined,
   };
+  const roomsCount = Math.max(1, Number(stayParams.rooms) || 1);
+  const childrenCount = Math.max(0, Number(stayParams.children) || 0);
 
   return (
     <>
@@ -53,7 +55,11 @@ export default async function HotelBookingPage({
           <div className="flex flex-col gap-6">
             <BookingHotelSummary hotel={hotel} stayParams={stayParams} />
             <CancellationWarningBanner />
-            <GuestDetailsForm roomType={`Apartment / ${room.boardType}`} />
+            <GuestDetailsForm
+              roomType={`Apartment / ${room.boardType}`}
+              roomsCount={roomsCount}
+              childrenCount={childrenCount}
+            />
             <GuestPreferencesForm />
             <ContactInfoForm />
 

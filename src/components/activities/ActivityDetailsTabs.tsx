@@ -2,8 +2,12 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { ChevronDown, Check } from "lucide-react";
+import Link from "next/link";
+import { Calendar, Check } from "lucide-react";
+import { SingleDateField } from "@/components/ui/DatePicker";
+import { startOfToday, toISODate } from "@/lib/dateUtils";
 import { cn } from "@/lib/utils";
+import { getActivityBookingOptions } from "@/lib/data";
 import type { ActivityResult } from "@/types";
 
 const TABS = ["Activities", "Highlights", "Activity Details"] as const;
@@ -17,51 +21,48 @@ const ACTIVITY_HIGHLIGHTS = [
   "Professional guides and staff on hand throughout your visit",
 ];
 
-type ActivityOption = {
-  id: string;
-  image: string;
-  type: string;
-  price: number;
-};
+const TODAY_ISO = toISODate(startOfToday());
 
-function buildOptions(activity: ActivityResult): ActivityOption[] {
-  return activity.gallery.slice(0, 3).map((image, index) => ({
-    id: `${activity.id}-option-${index + 1}`,
-    image,
-    type: "Shared tour without quad bike",
-    price: 65,
-  }));
-}
-
-function ChooseDateSelect() {
+function ChooseDateField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <div className="relative">
-      <select
-        defaultValue=""
-        aria-label="Choose date"
-        className="h-11 w-full appearance-none rounded-lg border border-neutral-200 bg-white px-3 pr-8 text-[14px] text-neutral-500 outline-none"
-      >
-        <option value="" disabled>
-          Choose Date
-        </option>
-      </select>
-      <ChevronDown className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-neutral-400" />
-    </div>
+    <SingleDateField
+      icon={<Calendar className="size-4" />}
+      placeholder="Choose Date"
+      value={value}
+      onChange={onChange}
+      minDateIso={TODAY_ISO}
+      triggerClassName="h-11 w-full rounded-lg border border-neutral-200 bg-white px-3 text-[14px] outline-none focus:border-brand-blue"
+    />
   );
 }
 
-function OptionPrice({ price }: { price: number }) {
+function OptionPrice({ price, guestCount }: { price: number; guestCount: number }) {
   return (
     <div>
       <p className="text-[12px] text-neutral-400">Total Price</p>
-      <p className="text-[16px] font-bold text-neutral-900">USD {price.toFixed(2)}</p>
+      <p className="text-[16px] font-bold text-neutral-900">USD {(price * guestCount).toFixed(2)}</p>
     </div>
   );
 }
 
-export function ActivityDetailsTabs({ activity }: { activity: ActivityResult }) {
+export function ActivityDetailsTabs({
+  activity,
+  adults,
+  childrenCount,
+}: {
+  activity: ActivityResult;
+  adults: number;
+  childrenCount: number;
+}) {
   const [activeTab, setActiveTab] = useState<Tab>("Activities");
-  const options = buildOptions(activity);
+  const [selectedDates, setSelectedDates] = useState<Record<string, string>>({});
+  const options = getActivityBookingOptions(activity);
+  const guestCount = adults + childrenCount;
+
+  function bookingHref(optionId: string) {
+    const date = selectedDates[optionId];
+    return `/activities/${activity.id}/book?option=${optionId}&adults=${adults}&children=${childrenCount}${date ? `&date=${date}` : ""}`;
+  }
 
   return (
     <div>
@@ -102,16 +103,28 @@ export function ActivityDetailsTabs({ activity }: { activity: ActivityResult }) 
                   <div className="p-4">
                     <p className="text-[15px] font-bold text-brand-blue">{option.type}</p>
                     <div className="mt-3">
-                      <ChooseDateSelect />
+                      <ChooseDateField
+                        value={selectedDates[option.id] ?? ""}
+                        onChange={(date) =>
+                          setSelectedDates((prev) => ({ ...prev, [option.id]: date }))
+                        }
+                      />
                     </div>
                     <div className="mt-3 flex items-center justify-between gap-4 border-t border-neutral-100 pt-3">
-                      <OptionPrice price={option.price} />
-                      <button
-                        type="button"
-                        className="flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-brand-blue px-6 text-[14px] font-semibold text-white transition-transform active:scale-[0.97]"
+                      <OptionPrice price={option.price} guestCount={guestCount} />
+                      <Link
+                        href={bookingHref(option.id)}
+                        aria-disabled={!selectedDates[option.id]}
+                        onClick={(event) => {
+                          if (!selectedDates[option.id]) event.preventDefault();
+                        }}
+                        className={cn(
+                          "flex h-12 shrink-0 items-center justify-center rounded-[8px] bg-brand-blue px-6 text-[14px] font-semibold text-white transition-transform active:scale-[0.97]",
+                          !selectedDates[option.id] && "cursor-not-allowed opacity-50"
+                        )}
                       >
                         Book Now
-                      </button>
+                      </Link>
                     </div>
                   </div>
                 </div>
@@ -161,17 +174,29 @@ export function ActivityDetailsTabs({ activity }: { activity: ActivityResult }) 
                           <p className="text-[15px] font-bold text-brand-blue">{option.type}</p>
                         </td>
                         <td className="border border-neutral-200 p-3 align-top">
-                          <ChooseDateSelect />
+                          <ChooseDateField
+                            value={selectedDates[option.id] ?? ""}
+                            onChange={(date) =>
+                              setSelectedDates((prev) => ({ ...prev, [option.id]: date }))
+                            }
+                          />
                         </td>
                         <td className="border border-neutral-200 p-5 align-top">
                           <div className="flex w-full items-center justify-between gap-4">
-                            <OptionPrice price={option.price} />
-                            <button
-                              type="button"
-                              className="flex h-11 shrink-0 items-center justify-center rounded-[8px] bg-brand-blue px-6 text-[14px] font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+                            <OptionPrice price={option.price} guestCount={guestCount} />
+                            <Link
+                              href={bookingHref(option.id)}
+                              aria-disabled={!selectedDates[option.id]}
+                              onClick={(event) => {
+                                if (!selectedDates[option.id]) event.preventDefault();
+                              }}
+                              className={cn(
+                                "flex h-11 shrink-0 items-center justify-center rounded-[8px] bg-brand-blue px-6 text-[14px] font-semibold text-white transition-colors hover:bg-brand-blue-dark",
+                                !selectedDates[option.id] && "cursor-not-allowed opacity-50"
+                              )}
                             >
                               Book Now
-                            </button>
+                            </Link>
                           </div>
                         </td>
                       </tr>

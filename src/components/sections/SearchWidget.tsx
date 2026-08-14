@@ -9,8 +9,6 @@ import {
   Calendar,
   Car,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   Globe,
   Loader2,
@@ -24,6 +22,8 @@ import {
 } from "lucide-react";
 import { searchCategories } from "@/lib/data";
 import { CruiseSupportPanel } from "@/components/sections/CruiseSupportPanel";
+import { DateRangeField, SingleDateField } from "@/components/ui/DatePicker";
+import { formatDate } from "@/lib/dateUtils";
 import { useClickOutside } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
@@ -169,6 +169,10 @@ type SharedSearchState = {
   onCheckOutChange: (value: string) => void;
   rooms: RoomConfig[];
   onRoomsChange: (updater: (prev: RoomConfig[]) => RoomConfig[]) => void;
+  activityAdults: number;
+  activityChildren: number;
+  onActivityAdultsChange: (value: number) => void;
+  onActivityChildrenChange: (value: number) => void;
 };
 
 export function SearchWidget({
@@ -192,6 +196,8 @@ export function SearchWidget({
   const [checkIn, setCheckIn] = useState(initialValues?.checkIn ?? "");
   const [checkOut, setCheckOut] = useState(initialValues?.checkOut ?? "");
   const [rooms, setRooms] = useState<RoomConfig[]>(() => buildInitialRooms(initialValues));
+  const [activityAdults, setActivityAdults] = useState(2);
+  const [activityChildren, setActivityChildren] = useState(0);
   const [isExpanded, setIsExpanded] = useState(!compactOnMobile);
   const fields = searchFieldsByCategory[activeCategory] ?? defaultFields;
 
@@ -210,7 +216,8 @@ export function SearchWidget({
     : "Select dates";
 
   const activityTitle = destination || "Where to?";
-  const activitySummary = "Tap to edit dates & guests";
+  const activityTotalGuests = activityAdults + activityChildren;
+  const activitySummary = `${activityTotalGuests} guest${activityTotalGuests === 1 ? "" : "s"}`;
 
   const shared: SharedSearchState = {
     destination,
@@ -218,6 +225,10 @@ export function SearchWidget({
     checkIn,
     checkOut,
     onCheckInChange: setCheckIn,
+    activityAdults,
+    activityChildren,
+    onActivityAdultsChange: setActivityAdults,
+    onActivityChildrenChange: setActivityChildren,
     onCheckOutChange: setCheckOut,
     rooms,
     onRoomsChange: setRooms,
@@ -241,8 +252,13 @@ export function SearchWidget({
     }
 
     if (activeCategory === "activities") {
+      const activityParams = new URLSearchParams();
+      if (destination.trim()) activityParams.set("destination", destination.trim());
+      activityParams.set("adults", String(activityAdults));
+      activityParams.set("children", String(activityChildren));
+
       startSearchTransition(() => {
-        router.push("/activities");
+        router.push(`/activities?${activityParams.toString()}`);
       });
       return;
     }
@@ -400,507 +416,6 @@ const fieldContainerClass =
 const controlClass =
   "w-full min-w-0 flex-1 bg-transparent text-[14px] font-medium text-neutral-900 outline-none placeholder:text-neutral-500 [color-scheme:light]";
 
-function formatDate(value: string) {
-  const [year, month, day] = value.split("-");
-  return `${day}-${month}-${year}`;
-}
-
-const MONTH_NAMES = [
-  "January",
-  "February",
-  "March",
-  "April",
-  "May",
-  "June",
-  "July",
-  "August",
-  "September",
-  "October",
-  "November",
-  "December",
-];
-const WEEKDAY_LABELS = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
-
-function toISODate(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseISODate(value: string): Date {
-  const [year, month, day] = value.split("-").map(Number);
-  return new Date(year, month - 1, day);
-}
-
-function startOfMonth(date: Date): Date {
-  return new Date(date.getFullYear(), date.getMonth(), 1);
-}
-
-function addMonths(date: Date, count: number): Date {
-  return new Date(date.getFullYear(), date.getMonth() + count, 1);
-}
-
-function startOfToday(): Date {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate());
-}
-
-function buildMonthGrid(monthStart: Date): (Date | null)[] {
-  const year = monthStart.getFullYear();
-  const month = monthStart.getMonth();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const firstWeekday = new Date(year, month, 1).getDay();
-  const cells: (Date | null)[] = [];
-  for (let i = 0; i < firstWeekday; i++) cells.push(null);
-  for (let day = 1; day <= daysInMonth; day++) cells.push(new Date(year, month, day));
-  while (cells.length % 7 !== 0) cells.push(null);
-  return cells;
-}
-
-type PanelStyle = { top: number; left: number; width: number };
-
-function useAnchoredPanel(getDesiredWidth: () => number) {
-  const [open, setOpen] = useState(false);
-  const [panelStyle, setPanelStyle] = useState<PanelStyle | null>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  function computePanelPosition() {
-    if (!containerRef.current) return;
-    const width = Math.min(getDesiredWidth(), window.innerWidth - 32);
-    const rect = containerRef.current.getBoundingClientRect();
-    const left = Math.min(Math.max(16, rect.left), window.innerWidth - width - 16);
-    setPanelStyle({ top: rect.bottom + 8, left, width });
-  }
-
-  useEffect(() => {
-    if (!open) return;
-
-    function handlePointerDown(event: MouseEvent) {
-      const target = event.target as Node;
-      if (containerRef.current?.contains(target) || panelRef.current?.contains(target)) return;
-      setOpen(false);
-    }
-
-    document.addEventListener("mousedown", handlePointerDown);
-    window.addEventListener("scroll", computePanelPosition, true);
-    window.addEventListener("resize", computePanelPosition);
-    return () => {
-      document.removeEventListener("mousedown", handlePointerDown);
-      window.removeEventListener("scroll", computePanelPosition, true);
-      window.removeEventListener("resize", computePanelPosition);
-    };
-  }, [open]);
-
-  function toggleOpen(onBeforeOpen?: () => void) {
-    if (!open) {
-      computePanelPosition();
-      onBeforeOpen?.();
-    }
-    setOpen((value) => !value);
-  }
-
-  return { open, setOpen, panelStyle, containerRef, panelRef, toggleOpen };
-}
-
-function CalendarNav({
-  monthsToShow,
-  months,
-  canGoPrev,
-  onPrev,
-  onNext,
-}: {
-  monthsToShow: number;
-  months: Date[];
-  canGoPrev: boolean;
-  onPrev: () => void;
-  onNext: () => void;
-}) {
-  return (
-    <div className="flex items-center justify-between px-1">
-      <button
-        type="button"
-        onClick={onPrev}
-        disabled={!canGoPrev}
-        aria-label="Previous month"
-        className="flex size-8 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100 disabled:cursor-not-allowed disabled:opacity-30"
-      >
-        <ChevronLeft className="size-4" />
-      </button>
-      <span className="text-[13px] font-medium text-neutral-400">
-        {monthsToShow === 2
-          ? `${MONTH_NAMES[months[0].getMonth()]} ${months[0].getFullYear()} – ${MONTH_NAMES[months[1].getMonth()]} ${months[1].getFullYear()}`
-          : `${MONTH_NAMES[months[0].getMonth()]} ${months[0].getFullYear()}`}
-      </span>
-      <button
-        type="button"
-        onClick={onNext}
-        aria-label="Next month"
-        className="flex size-8 items-center justify-center rounded-full text-neutral-500 transition-colors hover:bg-neutral-100"
-      >
-        <ChevronRight className="size-4" />
-      </button>
-    </div>
-  );
-}
-
-type DayVisual = { isBoundary: boolean; fill: "none" | "full" | "start" | "end" };
-
-function CalendarMonths({
-  months,
-  monthsToShow,
-  todayIso,
-  minSelectableIso,
-  getDayVisual,
-  onDayClick,
-  onDayHover,
-}: {
-  months: Date[];
-  monthsToShow: number;
-  todayIso: string;
-  minSelectableIso: string;
-  getDayVisual: (iso: string) => DayVisual;
-  onDayClick: (iso: string) => void;
-  onDayHover: (iso: string) => void;
-}) {
-  return (
-    <div className={cn("mt-2 grid gap-6", monthsToShow === 2 ? "grid-cols-2" : "grid-cols-1")}>
-      {months.map((monthStart, monthIndex) => (
-        <div key={monthIndex}>
-          <p className="text-center text-[14px] font-semibold text-neutral-900">
-            {MONTH_NAMES[monthStart.getMonth()]} {monthStart.getFullYear()}
-          </p>
-          <div className="mt-2 grid grid-cols-7 text-center text-[11px] font-medium text-neutral-400">
-            {WEEKDAY_LABELS.map((label, labelIndex) => (
-              <span key={`${label}-${labelIndex}`}>{label}</span>
-            ))}
-          </div>
-          <div className="grid grid-cols-7">
-            {buildMonthGrid(monthStart).map((date, cellIndex) => {
-              if (!date) return <div key={cellIndex} className="h-10 w-full" />;
-
-              const iso = toISODate(date);
-              const isDisabled = iso < minSelectableIso;
-              const isToday = iso === todayIso;
-              const visual: DayVisual = isDisabled
-                ? { isBoundary: false, fill: "none" }
-                : getDayVisual(iso);
-
-              return (
-                <button
-                  key={iso}
-                  type="button"
-                  disabled={isDisabled}
-                  onMouseEnter={() => !isDisabled && onDayHover(iso)}
-                  onClick={() => !isDisabled && onDayClick(iso)}
-                  className={cn(
-                    "relative flex h-10 w-full items-center justify-center text-[13px]",
-                    isDisabled && "cursor-not-allowed"
-                  )}
-                >
-                  {visual.fill === "full" && (
-                    <span className="absolute inset-y-0 left-0 right-0 bg-brand-blue/10" />
-                  )}
-                  {visual.fill === "start" && (
-                    <span className="absolute inset-y-0 left-1/2 right-0 bg-brand-blue/10" />
-                  )}
-                  {visual.fill === "end" && (
-                    <span className="absolute inset-y-0 left-0 right-1/2 bg-brand-blue/10" />
-                  )}
-                  <span
-                    className={cn(
-                      "relative z-10 flex size-9 items-center justify-center rounded-full font-medium transition-colors",
-                      visual.isBoundary
-                        ? "bg-brand-blue text-white"
-                        : isDisabled
-                          ? "text-neutral-300"
-                          : isToday
-                            ? "border border-brand-blue text-brand-blue"
-                            : "text-neutral-700 hover:bg-neutral-100"
-                    )}
-                  >
-                    {date.getDate()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-const calendarPanelClass =
-  "z-[100] max-h-[85vh] overflow-y-auto rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.15)]";
-
-function DateRangeField({
-  icon,
-  placeholder,
-  checkIn: controlledCheckIn,
-  checkOut: controlledCheckOut,
-  onCheckInChange,
-  onCheckOutChange,
-}: {
-  icon: React.ReactNode;
-  placeholder?: string;
-  checkIn?: string;
-  checkOut?: string;
-  onCheckInChange?: (value: string) => void;
-  onCheckOutChange?: (value: string) => void;
-}) {
-  const [internalCheckIn, setInternalCheckIn] = useState("");
-  const [internalCheckOut, setInternalCheckOut] = useState("");
-  const isControlled = controlledCheckIn !== undefined && onCheckInChange !== undefined;
-  const checkIn = isControlled ? controlledCheckIn! : internalCheckIn;
-  const checkOut = isControlled ? controlledCheckOut! : internalCheckOut;
-  const setCheckIn = isControlled ? onCheckInChange! : setInternalCheckIn;
-  const setCheckOut = isControlled ? onCheckOutChange! : setInternalCheckOut;
-
-  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
-  const [viewMonth, setViewMonth] = useState<Date>(() =>
-    startOfMonth(checkIn ? parseISODate(checkIn) : new Date())
-  );
-  const [rangeStartLabel, rangeEndLabel] = (placeholder ?? "").split(" - ");
-  const today = startOfToday();
-  const todayIso = toISODate(today);
-  const { open, setOpen, panelStyle, containerRef, panelRef, toggleOpen } = useAnchoredPanel(() =>
-    window.innerWidth >= 700 ? 656 : 336
-  );
-
-  function handleToggle() {
-    toggleOpen(() => {
-      setViewMonth(startOfMonth(checkIn ? parseISODate(checkIn) : new Date()));
-      setHoveredDate(null);
-    });
-  }
-
-  function handleDayClick(iso: string) {
-    if (!checkIn || checkOut) {
-      setCheckIn(iso);
-      setCheckOut("");
-      return;
-    }
-    if (iso <= checkIn) {
-      setCheckIn(iso);
-      setCheckOut("");
-      return;
-    }
-    setCheckOut(iso);
-    setOpen(false);
-  }
-
-  const monthsToShow = panelStyle && panelStyle.width >= 600 ? 2 : 1;
-  const months = Array.from({ length: monthsToShow }, (_, index) => addMonths(viewMonth, index));
-  const canGoPrev = viewMonth > startOfMonth(today);
-  const previewEnd = checkIn && !checkOut ? hoveredDate : null;
-  const rangeEnd = checkOut || previewEnd;
-
-  function getDayVisual(iso: string): DayVisual {
-    const isStart = iso === checkIn;
-    const isEnd = checkOut ? iso === checkOut : false;
-    const isPreviewEnd = !checkOut && previewEnd === iso && !isStart;
-    const hasSpan = Boolean(checkOut || previewEnd);
-    const inRange = Boolean(rangeEnd && checkIn && iso > checkIn && iso < rangeEnd);
-
-    return {
-      isBoundary: isStart || isEnd || isPreviewEnd,
-      fill: inRange ? "full" : isStart && hasSpan ? "start" : isEnd || isPreviewEnd ? "end" : "none",
-    };
-  }
-
-  return (
-    <div ref={containerRef} className="relative flex-1">
-      <button type="button" onClick={handleToggle} className={fieldContainerClass}>
-        <span className="shrink-0 text-neutral-500">{icon}</span>
-        <span className="flex flex-1 items-center gap-2 overflow-hidden text-left">
-          <span
-            className={cn(
-              "truncate text-[14px] font-medium",
-              checkIn ? "text-neutral-900" : "text-neutral-500"
-            )}
-          >
-            {checkIn ? formatDate(checkIn) : rangeStartLabel || placeholder}
-          </span>
-          <span className="shrink-0 text-neutral-300">–</span>
-          <span
-            className={cn(
-              "truncate text-[14px] font-medium",
-              checkOut ? "text-neutral-900" : "text-neutral-500"
-            )}
-          >
-            {checkOut ? formatDate(checkOut) : rangeEndLabel || placeholder}
-          </span>
-        </span>
-      </button>
-
-      {open &&
-        panelStyle &&
-        createPortal(
-          <div
-            ref={panelRef}
-            style={{ position: "fixed", top: panelStyle.top, left: panelStyle.left, width: panelStyle.width }}
-            onMouseLeave={() => setHoveredDate(null)}
-            className={calendarPanelClass}
-          >
-            <CalendarNav
-              monthsToShow={monthsToShow}
-              months={months}
-              canGoPrev={canGoPrev}
-              onPrev={() => canGoPrev && setViewMonth((value) => addMonths(value, -1))}
-              onNext={() => setViewMonth((value) => addMonths(value, 1))}
-            />
-
-            <CalendarMonths
-              months={months}
-              monthsToShow={monthsToShow}
-              todayIso={todayIso}
-              minSelectableIso={todayIso}
-              getDayVisual={getDayVisual}
-              onDayClick={handleDayClick}
-              onDayHover={setHoveredDate}
-            />
-
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  setCheckIn("");
-                  setCheckOut("");
-                }}
-                className="text-[13px] font-semibold text-neutral-500 transition-colors hover:text-neutral-700"
-              >
-                Clear dates
-              </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-xl bg-brand-lime px-6 py-2.5 text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
-              >
-                Done
-              </button>
-            </div>
-          </div>,
-          document.body
-        )}
-    </div>
-  );
-}
-
-function SingleDateField({
-  icon,
-  placeholder,
-  value: controlledValue,
-  onChange,
-  minDateIso,
-  disabled = false,
-}: {
-  icon: React.ReactNode;
-  placeholder?: string;
-  value?: string;
-  onChange?: (value: string) => void;
-  minDateIso?: string;
-  disabled?: boolean;
-}) {
-  const [internalValue, setInternalValue] = useState("");
-  const isControlled = controlledValue !== undefined && onChange !== undefined;
-  const value = isControlled ? controlledValue! : internalValue;
-  const setValue = isControlled ? onChange! : setInternalValue;
-
-  const [viewMonth, setViewMonth] = useState<Date>(() =>
-    startOfMonth(value ? parseISODate(value) : new Date())
-  );
-  const today = startOfToday();
-  const todayIso = toISODate(today);
-  const minSelectableIso = minDateIso && minDateIso > todayIso ? minDateIso : todayIso;
-  const { open, setOpen, panelStyle, containerRef, panelRef, toggleOpen } = useAnchoredPanel(() => 336);
-
-  function handleToggle() {
-    if (disabled) return;
-    toggleOpen(() => setViewMonth(startOfMonth(value ? parseISODate(value) : parseISODate(minSelectableIso))));
-  }
-
-  function handleDayClick(iso: string) {
-    setValue(iso);
-    setOpen(false);
-  }
-
-  const months = [viewMonth];
-  const canGoPrev = viewMonth > startOfMonth(parseISODate(minSelectableIso));
-
-  function getDayVisual(iso: string): DayVisual {
-    return { isBoundary: iso === value, fill: "none" };
-  }
-
-  return (
-    <div ref={containerRef} className="relative flex-1">
-      <button
-        type="button"
-        onClick={handleToggle}
-        disabled={disabled}
-        aria-label={placeholder}
-        className={cn(fieldContainerClass, disabled && "cursor-not-allowed opacity-50")}
-      >
-        <span className="shrink-0 text-neutral-500">{icon}</span>
-        <span
-          className={cn(
-            "flex-1 truncate text-left text-[14px] font-medium",
-            value ? "text-neutral-900" : "text-neutral-500"
-          )}
-        >
-          {value ? formatDate(value) : placeholder}
-        </span>
-      </button>
-
-      {open &&
-        panelStyle &&
-        createPortal(
-          <div
-            ref={panelRef}
-            style={{ position: "fixed", top: panelStyle.top, left: panelStyle.left, width: panelStyle.width }}
-            className={calendarPanelClass}
-          >
-            <CalendarNav
-              monthsToShow={1}
-              months={months}
-              canGoPrev={canGoPrev}
-              onPrev={() => canGoPrev && setViewMonth((v) => addMonths(v, -1))}
-              onNext={() => setViewMonth((v) => addMonths(v, 1))}
-            />
-
-            <CalendarMonths
-              months={months}
-              monthsToShow={1}
-              todayIso={todayIso}
-              minSelectableIso={minSelectableIso}
-              getDayVisual={getDayVisual}
-              onDayClick={handleDayClick}
-              onDayHover={() => {}}
-            />
-
-            <div className="mt-4 flex items-center justify-between gap-3 border-t border-neutral-100 pt-4">
-              <button
-                type="button"
-                onClick={() => setValue("")}
-                className="text-[13px] font-semibold text-neutral-500 transition-colors hover:text-neutral-700"
-              >
-                Clear date
-              </button>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="rounded-xl bg-brand-lime px-6 py-2.5 text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
-              >
-                Done
-              </button>
-            </div>
-          </div>,
-          document.body
-        )}
-    </div>
-  );
-}
 
 function SearchField({
   icon,
@@ -927,7 +442,15 @@ function SearchField({
   }
 
   if (type === "activityGuests") {
-    return <ActivityGuestsField icon={icon} />;
+    return (
+      <ActivityGuestsField
+        icon={icon}
+        adults={shared.activityAdults}
+        childrenCount={shared.activityChildren}
+        onAdultsChange={shared.onActivityAdultsChange}
+        onChildrenChange={shared.onActivityChildrenChange}
+      />
+    );
   }
 
   if (type === "dateRange") {
@@ -1209,9 +732,19 @@ function GuestsField({
   );
 }
 
-function ActivityGuestsField({ icon }: { icon: React.ReactNode }) {
-  const [adults, setAdults] = useState(2);
-  const [children, setChildren] = useState(0);
+function ActivityGuestsField({
+  icon,
+  adults,
+  childrenCount,
+  onAdultsChange,
+  onChildrenChange,
+}: {
+  icon: React.ReactNode;
+  adults: number;
+  childrenCount: number;
+  onAdultsChange: (value: number) => void;
+  onChildrenChange: (value: number) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number } | null>(
     null
@@ -1256,7 +789,7 @@ function ActivityGuestsField({ icon }: { icon: React.ReactNode }) {
   }
 
   const summary = `${adults} Adult${adults === 1 ? "" : "s"}${
-    children > 0 ? `, ${children} Child${children === 1 ? "" : "ren"}` : ""
+    childrenCount > 0 ? `, ${childrenCount} Child${childrenCount === 1 ? "" : "ren"}` : ""
   }`;
 
   return (
@@ -1289,19 +822,19 @@ function ActivityGuestsField({ icon }: { icon: React.ReactNode }) {
                 label="Adults"
                 hint="+12 Y"
                 value={adults}
-                onDecrease={() => setAdults((value) => Math.max(1, value - 1))}
-                onIncrease={() => setAdults((value) => Math.min(MAX_ADULTS, value + 1))}
+                onDecrease={() => onAdultsChange(Math.max(1, adults - 1))}
+                onIncrease={() => onAdultsChange(Math.min(MAX_ADULTS, adults + 1))}
                 disableDecrease={adults <= 1}
                 disableIncrease={adults >= MAX_ADULTS}
               />
               <GuestCounter
                 label="Children"
                 hint="+2 Y"
-                value={children}
-                onDecrease={() => setChildren((value) => Math.max(0, value - 1))}
-                onIncrease={() => setChildren((value) => Math.min(MAX_CHILDREN, value + 1))}
-                disableDecrease={children <= 0}
-                disableIncrease={children >= MAX_CHILDREN}
+                value={childrenCount}
+                onDecrease={() => onChildrenChange(Math.max(0, childrenCount - 1))}
+                onIncrease={() => onChildrenChange(Math.min(MAX_CHILDREN, childrenCount + 1))}
+                disableDecrease={childrenCount <= 0}
+                disableIncrease={childrenCount >= MAX_CHILDREN}
               />
             </div>
 

@@ -726,4 +726,27 @@ export function getActivityById(id: string): ActivityResult | undefined {
   return activities.find((activity) => activity.id === id);
 }
 
+export type ActivityBookingOption = {
+  id: string;
+  image: string;
+  type: string;
+  price: number;
+};
+
+export function getActivityBookingOptions(activity: ActivityResult): ActivityBookingOption[] {
+  return activity.gallery.slice(0, 3).map((image, index) => ({
+    id: `${activity.id}-option-${index + 1}`,
+    image,
+    type: "Shared tour without quad bike",
+    price: 65,
+  }));
+}
+
+export function getActivityBookingOptionById(
+  activity: ActivityResult,
+  optionId: string
+): ActivityBookingOption | undefined {
+  return getActivityBookingOptions(activity).find((option) => option.id === optionId);
+}
+
 export const contactEmail = "info@holidayscenter.com";

@@ -5,7 +5,20 @@ import { SearchWidget } from "@/components/sections/SearchWidget";
 import { ActivityResultsSection } from "@/components/activities/ActivityResultsSection";
 import { activities } from "@/lib/data";
 
-export default function ActivitiesPage() {
+function firstValue(value: string | string[] | undefined): string {
+  if (Array.isArray(value)) return value[0] ?? "";
+  return value ?? "";
+}
+
+export default async function ActivitiesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const query = await searchParams;
+  const adults = Math.max(1, Math.min(Number(firstValue(query.adults)) || 2, 9));
+  const children = Math.max(0, Math.min(Number(firstValue(query.children)) || 0, 6));
+
   return (
     <>
       <Header />
@@ -17,7 +30,7 @@ export default function ActivitiesPage() {
         </div>
 
         <Container className="mt-5 grid grid-cols-1 gap-5 sm:mt-8 lg:mt-10 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-8">
-          <ActivityResultsSection activities={activities} />
+          <ActivityResultsSection activities={activities} adults={adults} childrenCount={children} />
         </Container>
       </main>
       <Footer />

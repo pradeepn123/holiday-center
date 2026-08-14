@@ -6,9 +6,13 @@ import type { ActivityResult } from "@/types";
 
 export function ActivityResultCard({
   activity,
+  adults,
+  childrenCount,
   ctaLabel = "View Details",
 }: {
   activity: ActivityResult;
+  adults: number;
+  childrenCount: number;
   ctaLabel?: string;
 }) {
   return (
@@ -63,7 +67,7 @@ export function ActivityResultCard({
         </div>
 
         <Link
-          href={`/activities/${activity.id}`}
+          href={`/activities/${activity.id}?adults=${adults}&children=${childrenCount}`}
           className="flex h-12 shrink-0 items-center gap-2 rounded-[8px] bg-brand-blue px-5 text-[14px] font-semibold text-white transition-transform active:scale-[0.97] sm:h-11 sm:px-6 sm:hover:scale-[1.02] sm:hover:bg-brand-blue-dark sm:active:scale-100"
         >
           {ctaLabel}

@@ -29,7 +29,7 @@ export default async function SportsFixtureDetailsPage({
 
         <Container className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_520px] lg:items-start">
           <SportsSeatMap />
-          <SportsTicketCategories categories={categories} />
+          <SportsTicketCategories fixtureId={fixture.id} categories={categories} />
         </Container>
       </main>
       <Footer />
