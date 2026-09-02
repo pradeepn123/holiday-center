@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Container";
@@ -37,6 +38,14 @@ export default async function FlightBookingPage({
     notFound();
   }
 
+  const confirmationParams = new URLSearchParams();
+  if (from) confirmationParams.set("from", from);
+  if (to) confirmationParams.set("to", to);
+  confirmationParams.set("tripType", tripType);
+  if (departureDate) confirmationParams.set("departureDate", departureDate);
+  if (returnDate) confirmationParams.set("returnDate", returnDate);
+  confirmationParams.set("passengers", String(passengers));
+
   return (
     <>
       <Header />
@@ -61,12 +70,12 @@ export default async function FlightBookingPage({
                 for details.
               </p>
 
-              <button
-                type="button"
-                className="mt-4 flex h-12 items-center justify-center rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+              <Link
+                href={`/flights/book/${flight.id}/confirmation?${confirmationParams.toString()}`}
+                className="mt-4 flex h-12 w-fit items-center justify-center rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-colors hover:bg-brand-blue-dark"
               >
                 Proceed to Payment
-              </button>
+              </Link>
             </div>
           </div>
 

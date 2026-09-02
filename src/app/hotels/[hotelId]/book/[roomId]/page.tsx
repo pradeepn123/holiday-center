@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Container";
@@ -47,6 +48,13 @@ export default async function HotelBookingPage({
   const roomsCount = Math.max(1, Number(stayParams.rooms) || 1);
   const childrenCount = Math.max(0, Number(stayParams.children) || 0);
 
+  const confirmationParams = new URLSearchParams();
+  if (stayParams.checkIn) confirmationParams.set("checkIn", stayParams.checkIn);
+  if (stayParams.checkOut) confirmationParams.set("checkOut", stayParams.checkOut);
+  if (stayParams.adults) confirmationParams.set("adults", stayParams.adults);
+  if (stayParams.children) confirmationParams.set("children", stayParams.children);
+  if (stayParams.rooms) confirmationParams.set("rooms", stayParams.rooms);
+
   return (
     <>
       <Header />
@@ -77,12 +85,12 @@ export default async function HotelBookingPage({
                 for details.
               </p>
 
-              <button
-                type="button"
-                className="mt-4 flex h-12 items-center justify-center rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-colors hover:bg-brand-blue-dark"
+              <Link
+                href={`/hotels/${hotel.id}/book/${room.id}/confirmation?${confirmationParams.toString()}`}
+                className="mt-4 flex h-12 w-fit items-center justify-center rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-colors hover:bg-brand-blue-dark"
               >
                 Proceed to Payment
-              </button>
+              </Link>
             </div>
           </div>
 

@@ -1,4 +1,5 @@
 import { ChevronDown } from "lucide-react";
+import { distributeChildren } from "@/lib/roomGuests";
 import { cn } from "@/lib/utils";
 
 const inputClass =
@@ -65,12 +66,6 @@ function ChildFields({ label }: { label: string }) {
       </div>
     </div>
   );
-}
-
-function distributeChildren(totalChildren: number, roomsCount: number): number[] {
-  const base = Math.floor(totalChildren / roomsCount);
-  const remainder = totalChildren % roomsCount;
-  return Array.from({ length: roomsCount }, (_, index) => base + (index < remainder ? 1 : 0));
 }
 
 function RoomGuestCard({
