@@ -1,5 +1,5 @@
 import { Eye, Target } from "lucide-react";
-import { Container } from "@/components/ui/Container";
+import { AboutContainer } from "./AboutContainer";
 import { SectionEyebrow } from "./SectionEyebrow";
 
 const VALUES = [
@@ -21,30 +21,30 @@ const VALUES = [
 
 export function AboutValues() {
   return (
-    <section className="bg-[#0d1b3d] py-20">
-      <Container>
-        <div className="text-center">
+    <section className="bg-[#0b1f3a] py-16 lg:py-[100px]">
+      <AboutContainer className="flex flex-col gap-10 lg:gap-16">
+        <div className="flex flex-col items-center gap-4 text-center">
           <SectionEyebrow variant="dark">Values &amp; Vision</SectionEyebrow>
-          <h2 className="mt-3 text-[28px] font-bold text-white sm:text-[32px]">
+          <h2 className="max-w-[952px] text-[32px] font-normal text-white lg:text-[44px]">
             Experience the difference with Holidays Center
           </h2>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-2">
           {VALUES.map((value) => (
             <div
               key={value.id}
-              className="rounded-2xl border border-white/10 bg-[#132a55] p-8"
+              className="flex flex-col gap-6 rounded-xl border border-[#224ba0] bg-[#0f2a5a] p-8 lg:p-10"
             >
-              <div className="flex size-11 items-center justify-center rounded-full bg-brand-lime/20 text-brand-lime">
-                <value.icon className="size-5" />
+              <div className="flex size-12 items-center justify-center rounded-full bg-[#224ba0]">
+                <value.icon className="size-6 text-white" />
               </div>
-              <p className="mt-5 text-[19px] font-bold text-white">{value.title}</p>
-              <p className="mt-3 text-[14px] leading-relaxed text-white/60">{value.description}</p>
+              <p className="text-[28px] font-normal text-white">{value.title}</p>
+              <p className="text-[15px] leading-[1.6] text-white">{value.description}</p>
             </div>
           ))}
         </div>
-      </Container>
+      </AboutContainer>
     </section>
   );
 }

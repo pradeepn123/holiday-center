@@ -12,15 +12,12 @@ export function SectionEyebrow({
   return (
     <div className={cn("flex items-center justify-center gap-2", className)}>
       <span
-        className={cn(
-          "size-1.5 rounded-full",
-          variant === "dark" ? "bg-brand-lime" : "bg-brand-blue"
-        )}
+        className={cn("size-1.5 rounded-full", variant === "dark" ? "bg-[#f59e0b]" : "bg-[#224ba0]")}
       />
       <span
         className={cn(
-          "text-[12px] font-bold uppercase tracking-[0.15em]",
-          variant === "dark" ? "text-white/70" : "text-neutral-500"
+          "text-[12px] font-bold uppercase tracking-wide",
+          variant === "dark" ? "text-white" : "text-[#5a6a80]"
         )}
       >
         {children}

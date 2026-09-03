@@ -6,32 +6,39 @@ export function AboutStoryBlock({
   paragraph,
   image,
   reverse = false,
+  fixedImageWidth = true,
 }: {
   title: string;
   paragraph: string;
   image: string;
   reverse?: boolean;
+  fixedImageWidth?: boolean;
 }) {
   return (
     <div
       className={cn(
-        "grid grid-cols-1 items-center gap-8 lg:grid-cols-2 lg:gap-16",
-        reverse && "lg:[&>*:first-child]:order-2"
+        "flex flex-col items-center gap-8 lg:gap-16",
+        reverse ? "lg:flex-row-reverse" : "lg:flex-row"
       )}
     >
-      <div className="relative aspect-[4/3] w-full max-w-md overflow-hidden rounded-2xl shadow-[0_20px_40px_rgba(15,23,42,0.12)]">
+      <div
+        className={cn(
+          "relative h-[280px] w-full overflow-hidden rounded-xl bg-[#224ba0] lg:h-[380px]",
+          fixedImageWidth ? "lg:w-[515px] lg:shrink-0" : "lg:flex-1"
+        )}
+      >
         <Image
           src={image}
           alt={title}
           fill
-          sizes="(min-width: 1024px) 420px, 100vw"
+          sizes="(min-width: 1024px) 515px, 100vw"
           className="object-cover"
         />
       </div>
 
-      <div>
-        <h2 className="text-[26px] font-bold text-neutral-950 sm:text-[28px]">{title}</h2>
-        <p className="mt-4 max-w-xl text-[15px] leading-relaxed text-neutral-500">{paragraph}</p>
+      <div className={cn("w-full", !fixedImageWidth && "lg:w-[733px] lg:shrink-0")}>
+        <h2 className="text-[28px] font-normal text-[#0d1b3e] lg:text-[32px]">{title}</h2>
+        <p className="mt-6 text-[16px] leading-[1.6] text-[#5a6a80]">{paragraph}</p>
       </div>
     </div>
   );

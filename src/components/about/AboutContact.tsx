@@ -1,33 +1,36 @@
 import { Mail, MessageCircle, Phone } from "lucide-react";
-import { Container } from "@/components/ui/Container";
-import { contactEmail, contactPhones } from "@/lib/data";
+import { AboutContainer } from "./AboutContainer";
 import { SectionEyebrow } from "./SectionEyebrow";
 
-const australiaPhone = contactPhones.find((phone) => phone.label === "Australia") ?? contactPhones[0];
+const GLOBAL_PHONES = [
+  { label: "Australia", value: "+61 1800 313 051" },
+  { label: "USA", value: "+1 725 565 0434" },
+  { label: "Canada", value: "+1 778 819 8144" },
+];
 
 export function AboutContact() {
   return (
-    <section className="bg-[#0d1b3d] py-20">
-      <Container>
-        <div className="text-center">
+    <section className="bg-[#0b1f3a] py-16 lg:py-[100px]">
+      <AboutContainer className="flex flex-col gap-10 lg:gap-14">
+        <div className="flex flex-col items-center gap-4 text-center">
           <SectionEyebrow variant="dark">Get In Touch</SectionEyebrow>
-          <h2 className="mt-3 text-[28px] font-bold text-white sm:text-[32px]">
+          <h2 className="max-w-[843px] text-[32px] font-normal text-white lg:text-[44px]">
             Ready to plan your next escape?
           </h2>
-          <p className="mx-auto mt-3 max-w-xl text-[15px] text-white/60">
+          <p className="max-w-[843px] text-[16px] text-white">
             Our expert travel specialists are available 24/7. Connect with us through whichever
             channel suits you best.
           </p>
         </div>
 
-        <div className="mt-12 grid grid-cols-1 gap-6 sm:grid-cols-3">
-          <div className="rounded-2xl border border-white/10 bg-[#132a55] p-6">
-            <div className="flex size-10 items-center justify-center rounded-full bg-brand-lime/20 text-brand-lime">
-              <Phone className="size-[18px]" />
+        <div className="grid grid-cols-1 gap-8 sm:grid-cols-3">
+          <div className="flex flex-col gap-5 rounded-lg border border-[#224ba0] bg-[#0f2a5a] p-8">
+            <div className="flex items-center gap-3">
+              <Phone className="size-5 text-white" />
+              <p className="text-[20px] font-normal text-white">Global Phones</p>
             </div>
-            <p className="mt-4 text-[16px] font-bold text-white">Global Phones</p>
-            <div className="mt-2 flex flex-col gap-1 text-[13px] text-white/60">
-              {contactPhones.map((phone) => (
+            <div className="flex flex-col gap-2 text-[14px] text-white">
+              {GLOBAL_PHONES.map((phone) => (
                 <span key={phone.label}>
                   {phone.label}: {phone.value}
                 </span>
@@ -35,31 +38,31 @@ export function AboutContact() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#132a55] p-6">
-            <div className="flex size-10 items-center justify-center rounded-full bg-brand-lime/20 text-brand-lime">
-              <MessageCircle className="size-[18px]" />
+          <div className="flex flex-col gap-5 rounded-lg border border-[#224ba0] bg-[#0f2a5a] p-8">
+            <div className="flex items-center gap-3">
+              <MessageCircle className="size-5 text-white" />
+              <p className="text-[20px] font-normal text-white">WhatsApp Support</p>
             </div>
-            <p className="mt-4 text-[16px] font-bold text-white">WhatsApp Support</p>
-            <div className="mt-2 flex flex-col gap-1 text-[13px] text-white/60">
+            <div className="flex flex-col gap-2 text-[14px] text-white">
               <span>Chat live with us directly</span>
               <span>Fast support &amp; quick booking</span>
-              <span>WhatsApp Link Available ({australiaPhone?.value})</span>
+              <span>WhatsApp Link Available</span>
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#132a55] p-6">
-            <div className="flex size-10 items-center justify-center rounded-full bg-brand-lime/20 text-brand-lime">
-              <Mail className="size-[18px]" />
+          <div className="flex flex-col gap-5 rounded-lg border border-[#224ba0] bg-[#0f2a5a] p-8">
+            <div className="flex items-center gap-3">
+              <Mail className="size-5 text-white" />
+              <p className="text-[20px] font-normal text-white">Corporate Email</p>
             </div>
-            <p className="mt-4 text-[16px] font-bold text-white">Corporate Email</p>
-            <div className="mt-2 flex flex-col gap-1 text-[13px] text-white/60">
-              <span>General: {contactEmail}</span>
+            <div className="flex flex-col gap-2 text-[14px] text-white">
+              <span>General: info@holidayscenter.com</span>
               <span>Reservations: booking@holidayscenter.com</span>
               <span>Support: help@holidayscenter.com</span>
             </div>
           </div>
         </div>
-      </Container>
+      </AboutContainer>
     </section>
   );
 }
