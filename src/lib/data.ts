@@ -1,5 +1,7 @@
 import type {
   ActivityResult,
+  BlogPost,
+  BookingGuideLink,
   Destination,
   FaqItem,
   FooterLinkGroup,
@@ -9,6 +11,7 @@ import type {
   SportsFixture,
   SportsTicketCategory,
   SportsTicketListing,
+  TeamMember,
   Testimonial,
   TourPackage,
   WhyBookHighlight,
@@ -590,53 +593,134 @@ export const whyBookHighlights: WhyBookHighlight[] = [
 
 export const testimonials: Testimonial[] = [
   {
-    id: "sarah-1",
-    name: "Sarah M.",
-    role: "Customer review",
+    id: "mark-l",
+    name: "Mark L.",
+    role: "Frequent Traveler",
     rating: 5,
     quote:
-      "The booking process was incredibly smooth. The team helped with every detail and the package was exactly as promised.",
-    avatar: "/assets/images/customer_img_3.png",
-  },
-  {
-    id: "sarah-2",
-    name: "Sarah M.",
-    role: "Customer review",
-    rating: 5,
-    quote:
-      "The booking process was incredibly smooth. The team helped with every detail and the package was exactly as promised.",
+      "I've used several travel booking platforms in the past, but none compare to the convenience and efficiency of Holidays Center. From flight options to accommodation choices, everything is laid out clearly, making planning my trips stress-free. Highly recommend!",
     avatar: "/assets/images/customer_img_1.png",
   },
   {
-    id: "sarah-3",
-    name: "Sarah M.",
-    role: "Customer review",
+    id: "emily-r",
+    name: "Emily R.",
+    role: "Happy Traveler",
     rating: 5,
     quote:
-      "The booking process was incredibly smooth. The team helped with every detail and the package was exactly as promised.",
+      "Holidays Center exceeded my expectations! Not only did I find great deals on my flights and hotel, but their customer service team was also incredibly helpful when I had questions about my booking. Thanks to them, I had a fantastic vacation experience.",
     avatar: "/assets/images/customer_img_2.png",
+  },
+  {
+    id: "alex-s",
+    name: "Alex S.",
+    role: "Thrifty Explorer",
+    rating: 5,
+    quote:
+      "As a budget-conscious traveler, I'm always on the lookout for affordable options without compromising quality. Holidays Center delivered just that! I managed to snag amazing deals on both cruise and hotel allowing me to enjoy a luxurious getaway without breaking the bank.",
+    avatar: "/assets/images/customer_img_3.png",
   },
 ];
 
 export const faqItems: FaqItem[] = [
   {
     id: "faq-1",
-    question: "How do I reset my password?",
+    question: "What services does Holidays Center provide?",
     answer:
-      "Go to the login page and select \"Forgot password\". We'll send a reset link to your registered email so you can set a new password.",
+      "We provide the best deals on bookings for hotels, flights, sports, cruises, holiday packages, activities, and car rentals with 24/7 human support.",
   },
   {
     id: "faq-2",
-    question: "What payment methods do you accept?",
+    question: "What accommodations does Holidays Center offer?",
     answer:
-      "We accept all major credit and debit cards, as well as popular digital wallets. All payments are processed securely at checkout.",
+      "We partner with hotels worldwide offering Standard, Deluxe, and Executive Suite room options, so you can find the right fit for every budget and travel style.",
   },
   {
     id: "faq-3",
-    question: "Can I cancel my subscription at any time?",
+    question: "How do I secure a booking on Holidayscenter.com?",
     answer:
-      "Yes, you can cancel at any time from your account settings. Check your booking confirmation for any fare-specific cancellation rules.",
+      "Search and select your hotel, flight, activity, or package, enter your traveller details, and complete payment at checkout. You'll receive an instant booking confirmation and voucher by email.",
   },
+  {
+    id: "faq-4",
+    question: "Can I cancel or modify my booking?",
+    answer:
+      "Most bookings can be cancelled or modified from your booking confirmation, subject to the fare or rate rules shown at checkout. Any free cancellation window and applicable fees are listed on your booking voucher.",
+  },
+];
+
+export const blogPosts: BlogPost[] = [
+  {
+    id: "family-friendly-hotels",
+    title: "Best Family-Friendly Hotels Around the World",
+    image: "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=900&auto=format&fit=crop",
+  },
+  {
+    id: "flight-booking-hacks",
+    title: "Expert Flight Hacks for Booking Last-Minute Deals",
+    image: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?q=80&w=900&auto=format&fit=crop",
+  },
+  {
+    id: "kid-friendly-cruises",
+    title: "The Ultimate Guide to Kid-Friendly Cruises in 2025",
+    image: "https://images.unsplash.com/photo-1548574505-5e239809ee19?q=80&w=900&auto=format&fit=crop",
+  },
+  {
+    id: "hidden-beaches",
+    title: "Top 10 Hidden Beaches to Discover This Summer",
+    image: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?q=80&w=900&auto=format&fit=crop",
+  },
+  {
+    id: "luxury-spa-resorts",
+    title: "Unwinding: The Best Luxury Spa Resorts",
+    image: "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?q=80&w=900&auto=format&fit=crop",
+  },
+  {
+    id: "wine-and-dining",
+    title: "A Guide to World-Class Wine and Dining",
+    image: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=900&auto=format&fit=crop",
+  },
+];
+
+export const teamMembers: TeamMember[] = [
+  {
+    id: "moustafa-ghandour",
+    name: "Moustafa Ghandour",
+    role: "CEO & Founder",
+    bio: "Driving the strategic direction and premium vision of Holidays Center global operations.",
+    photo: "/assets/images/team_ceo.png",
+  },
+  {
+    id: "asha-loren-encomacion",
+    name: "Asha Loren Encomacion",
+    role: "Executive Assistant",
+    bio: "Managing core corporate coordination and ensuring pristine service execution daily.",
+    photo: "/assets/images/team_executive_assistant.png",
+  },
+  {
+    id: "shivam",
+    name: "Shivam",
+    role: "Lead Developer",
+    bio: "Architecting our intuitive booking system for a frictionless luxury client experience.",
+    photo: "/assets/images/team_lead_developer.png",
+  },
+];
+
+export const partnerAirlines = ["Qatar Airways", "Emirates", "Etihad", "Singapore Air", "Lufthansa", "Jetstar"];
+
+export const partnerCruiseLines = [
+  "MSC Cruises",
+  "Norwegian",
+  "P&O Cruises",
+  "Princess",
+  "Royal Caribbean",
+  "Celebrity",
+];
+
+export const bookingGuides: BookingGuideLink[] = [
+  { label: "Guide to Book Hotel Accommodation", href: "/hotels" },
+  { label: "Guide to Book Your Own Cruise", href: "#" },
+  { label: "Guide to Book Your Own Flight", href: "/flights" },
+  { label: "Guide to Book Your Car Rental", href: "#" },
 ];
 
 export const footerLinkGroups: FooterLinkGroup[] = [
@@ -658,20 +742,20 @@ export const footerLinkGroups: FooterLinkGroup[] = [
     links: [
       { label: "Check My Booking", href: "#" },
       { label: "Customer Support", href: "#" },
-      { label: "Client Testimonial", href: "#" },
-      { label: "FAQs", href: "#" },
-      { label: "Blog", href: "#" },
+      { label: "Client Testimonial", href: "/testimonials" },
+      { label: "FAQs", href: "/faq" },
+      { label: "Blog", href: "/blog" },
     ],
   },
   {
     title: "Legal",
     links: [
-      { label: "About Us", href: "#" },
+      { label: "About Us", href: "/about" },
       { label: "Privacy Policy", href: "#" },
       { label: "Terms and Conditions", href: "#" },
       { label: "Refund Policy", href: "#" },
       { label: "Feedback Handling Policy", href: "#" },
-      { label: "Contact us", href: "#" },
+      { label: "Contact us", href: "/contact" },
     ],
   },
 ];
@@ -681,6 +765,8 @@ export const contactPhones = [
   { label: "USA", value: "+1 725 666 8484" },
   { label: "Canada", value: "+1 778 654 6544" },
 ];
+
+export const headquartersAddress = "1/451-459 Sydney Rd, Coburg, VIC 3058, Australia";
 
 export const activityTypeFilters = [
   "Red dunes safari- private tour",

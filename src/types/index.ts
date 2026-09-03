@@ -155,3 +155,22 @@ export type FooterLinkGroup = {
   title: string;
   links: { label: string; href: string }[];
 };
+
+export type BlogPost = {
+  id: string;
+  title: string;
+  image: string;
+};
+
+export type TeamMember = {
+  id: string;
+  name: string;
+  role: string;
+  bio: string;
+  photo: string;
+};
+
+export type BookingGuideLink = {
+  label: string;
+  href: string;
+};

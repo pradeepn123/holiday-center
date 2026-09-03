@@ -19,14 +19,14 @@ import { AuthModal, type AuthTab } from "./AuthModal";
 import { Logo } from "./Logo";
 
 const NAV_LINKS = [
-  { label: "Manage Booking", href: "#" },
-  { label: "Contact us", href: "#" },
+  { label: "Manage Booking", href: "/manage-booking" },
+  { label: "Contact us", href: "/contact" },
 ];
 
 const ACCOUNT_LINKS = [
   { label: "Dashboard", href: "#", icon: LayoutDashboard },
   { label: "Profile", href: "#", icon: UserCircle },
-  { label: "Manage Booking", href: "#", icon: ClipboardList },
+  { label: "Manage Booking", href: "/manage-booking", icon: ClipboardList },
 ];
 
 const CURRENCIES = [
