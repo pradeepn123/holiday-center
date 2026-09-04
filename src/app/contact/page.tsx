@@ -2,7 +2,7 @@ import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Container";
 import { ContactInfoCards } from "@/components/contact/ContactInfoCards";
-import { ContactLocationCard } from "@/components/contact/ContactLocationCard";
+import { ContactLocationMap } from "@/components/contact/ContactLocationMap";
 import { ContactForm } from "@/components/contact/ContactForm";
 import { generateVerificationCode } from "@/lib/verificationCode";
 
@@ -35,7 +35,7 @@ export default function ContactPage() {
           <div className="mt-14 grid grid-cols-1 gap-6 lg:grid-cols-[1fr_1.15fr] lg:items-start">
             <div className="flex flex-col gap-6">
               <ContactInfoCards />
-              <ContactLocationCard />
+              <ContactLocationMap />
             </div>
 
             <div className="flex rounded-2xl border border-neutral-100 bg-white p-6 shadow-[0_10px_30px_rgba(15,23,42,0.06)] sm:p-8">

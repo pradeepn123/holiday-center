@@ -24,8 +24,8 @@ const NAV_LINKS = [
 ];
 
 const ACCOUNT_LINKS = [
-  { label: "Dashboard", href: "#", icon: LayoutDashboard },
-  { label: "Profile", href: "#", icon: UserCircle },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Profile", href: "/manage-profile", icon: UserCircle },
   { label: "Manage Booking", href: "/manage-booking", icon: ClipboardList },
 ];
 
