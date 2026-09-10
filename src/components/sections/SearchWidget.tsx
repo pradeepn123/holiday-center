@@ -906,6 +906,55 @@ const TRIP_TYPES = [
 
 const TRAVEL_CLASSES = ["Economy", "Premium Economy", "Business", "First"];
 const MAX_PASSENGERS = 9;
+const MAX_INFANTS = 6;
+
+function PassengerCounterRow({
+  label,
+  hint,
+  value,
+  onDecrease,
+  onIncrease,
+  disableDecrease,
+  disableIncrease,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  onDecrease: () => void;
+  onIncrease: () => void;
+  disableDecrease: boolean;
+  disableIncrease: boolean;
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-[14px] font-medium text-neutral-900">{label}</p>
+        <p className="text-[12px] text-neutral-400">{hint}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onDecrease}
+          disabled={disableDecrease}
+          className="flex size-8 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Minus className="size-3.5" />
+        </button>
+        <span className="w-5 text-center text-[14px] font-semibold text-neutral-900">
+          {String(value).padStart(2, "0")}
+        </span>
+        <button
+          type="button"
+          onClick={onIncrease}
+          disabled={disableIncrease}
+          className="flex size-8 items-center justify-center rounded-full bg-neutral-900 text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Plus className="size-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 function FlightSearchPanel({
   className,
@@ -922,7 +971,10 @@ function FlightSearchPanel({
     initialValues?.tripType ?? "oneway"
   );
   const [travelClass, setTravelClass] = useState(initialValues?.travelClass ?? TRAVEL_CLASSES[0]);
-  const [passengers, setPassengers] = useState(initialValues?.passengers ?? 1);
+  const [adults, setAdults] = useState(initialValues?.passengers ?? 1);
+  const [children, setChildren] = useState(0);
+  const [infants, setInfants] = useState(0);
+  const passengers = adults + children + infants;
   const [from, setFrom] = useState(initialValues?.from ?? "");
   const [to, setTo] = useState(initialValues?.to ?? "");
   const [isPassengersOpen, setIsPassengersOpen] = useState(false);
@@ -1028,35 +1080,48 @@ function FlightSearchPanel({
             </button>
 
             {isPassengersOpen && (
-              <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[240px] rounded-2xl border border-neutral-100 bg-white p-4 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-                <div className="flex items-center justify-between">
-                  <span className="text-[14px] font-medium text-neutral-900">Passengers</span>
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setPassengers((value) => Math.max(1, value - 1))}
-                      disabled={passengers <= 1}
-                      className="flex size-8 items-center justify-center rounded-full border border-neutral-200 text-neutral-500 transition-colors hover:bg-neutral-50 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Minus className="size-3.5" />
-                    </button>
-                    <span className="w-5 text-center text-[14px] font-semibold text-neutral-900">
-                      {String(passengers).padStart(2, "0")}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setPassengers((value) => Math.min(MAX_PASSENGERS, value + 1))}
-                      disabled={passengers >= MAX_PASSENGERS}
-                      className="flex size-8 items-center justify-center rounded-full bg-neutral-900 text-white transition-colors hover:bg-neutral-800 disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      <Plus className="size-3.5" />
-                    </button>
+              <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[280px] rounded-2xl border border-neutral-100 bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
+                <div className="flex flex-col">
+                  <div className="border-b border-neutral-100 pb-5">
+                    <PassengerCounterRow
+                      label="Adults"
+                      hint="12+ yrs"
+                      value={adults}
+                      onDecrease={() => setAdults((value) => Math.max(1, value - 1))}
+                      onIncrease={() => setAdults((value) => Math.min(MAX_PASSENGERS, value + 1))}
+                      disableDecrease={adults <= 1}
+                      disableIncrease={adults >= MAX_PASSENGERS}
+                    />
+                  </div>
+                  <div className="border-b border-neutral-100 py-5">
+                    <PassengerCounterRow
+                      label="Child"
+                      hint="2-11 yrs"
+                      value={children}
+                      onDecrease={() => setChildren((value) => Math.max(0, value - 1))}
+                      onIncrease={() => setChildren((value) => Math.min(MAX_CHILDREN, value + 1))}
+                      disableDecrease={children <= 0}
+                      disableIncrease={children >= MAX_CHILDREN}
+                    />
+                  </div>
+                  <div className="pt-5">
+                    <PassengerCounterRow
+                      label="Infant"
+                      hint="Under 2 yrs"
+                      value={infants}
+                      onDecrease={() => setInfants((value) => Math.max(0, value - 1))}
+                      onIncrease={() =>
+                        setInfants((value) => Math.min(MAX_INFANTS, adults, value + 1))
+                      }
+                      disableDecrease={infants <= 0}
+                      disableIncrease={infants >= MAX_INFANTS || infants >= adults}
+                    />
                   </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsPassengersOpen(false)}
-                  className="mt-4 flex h-10 w-full items-center justify-center rounded-xl bg-brand-lime text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
+                  className="mt-6 flex h-11 w-full items-center justify-center rounded-xl bg-brand-lime text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
                 >
                   Done
                 </button>
