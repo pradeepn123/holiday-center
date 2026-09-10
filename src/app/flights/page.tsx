@@ -3,6 +3,7 @@ import { Footer } from "@/components/layout/Footer";
 import { Container } from "@/components/ui/Container";
 import { SearchWidget } from "@/components/sections/SearchWidget";
 import { FlightResultsSection } from "@/components/flights/FlightResultsSection";
+import { decodeFlightLegs } from "@/lib/flightParams";
 import { generateFlightResults } from "@/lib/flightsData";
 
 function firstValue(value: string | string[] | undefined): string {
@@ -23,8 +24,10 @@ export default async function FlightsPage({
   const returnDate = firstValue(params.returnDate);
   const travelClass = firstValue(params.travelClass) || "Economy";
   const passengers = Number(firstValue(params.passengers) || "1");
+  const legsParam = firstValue(params.legs);
+  const legs = tripType === "multicity" ? decodeFlightLegs(legsParam) : [];
 
-  const flights = generateFlightResults({ from, to, tripType, departureDate, returnDate });
+  const flights = generateFlightResults({ from, to, tripType, departureDate, returnDate, legs });
 
   return (
     <>
@@ -44,6 +47,7 @@ export default async function FlightsPage({
                 returnDate,
                 travelClass,
                 passengers,
+                legs,
               }}
             />
           </Container>
@@ -57,6 +61,7 @@ export default async function FlightsPage({
             tripType={tripType}
             passengers={passengers}
             travelClass={travelClass}
+            legs={legs}
             searchParams={{
               from,
               to,
@@ -65,6 +70,7 @@ export default async function FlightsPage({
               returnDate,
               travelClass,
               passengers: String(passengers),
+              legs: legsParam || undefined,
             }}
           />
         </Container>

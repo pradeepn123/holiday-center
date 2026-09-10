@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { applyFlightFilters, createDefaultFlightFilters, type FlightFilterState } from "@/lib/flightFilters";
-import type { FlightSearchParams } from "@/lib/flightParams";
+import type { FlightLegParam, FlightSearchParams } from "@/lib/flightParams";
 import type { FlightResult } from "@/types";
 import { FlightFiltersSidebar } from "./FlightFiltersSidebar";
 import { FlightResultsList } from "./FlightResultsList";
@@ -89,6 +89,7 @@ export function FlightResultsSection({
   tripType,
   passengers,
   travelClass,
+  legs = [],
   searchParams,
 }: {
   flights: FlightResult[];
@@ -97,6 +98,7 @@ export function FlightResultsSection({
   tripType: string;
   passengers: number;
   travelClass: string;
+  legs?: FlightLegParam[];
   searchParams: FlightSearchParams;
 }) {
   const [filters, setFilters] = useState<FlightFilterState>(createDefaultFlightFilters);
@@ -119,6 +121,7 @@ export function FlightResultsSection({
           tripType={tripType}
           passengers={passengers}
           travelClass={travelClass}
+          legs={legs}
         />
         <div className="mt-4 lg:hidden">
           <SessionCountdown />

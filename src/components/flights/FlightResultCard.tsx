@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { Fragment, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { stopsLabel } from "@/lib/flightsData";
+import { getFlightLegs, stopsLabel } from "@/lib/flightsData";
 import { buildFlightQueryString, type FlightSearchParams } from "@/lib/flightParams";
 import type { FlightResult } from "@/types";
 import { FlightDetailsModal, type FlightDetailsTab } from "./FlightDetailsModal";
@@ -31,18 +31,18 @@ export function FlightResultCard({
   const [modalTab, setModalTab] = useState<FlightDetailsTab | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const bookingHref = `/flights/book/${result.id}${buildFlightQueryString(searchParams)}`;
+  const legs = getFlightLegs(result);
 
   return (
     <div className="overflow-hidden rounded-2xl border border-[#0000001A] bg-white shadow-[0_2px_10px_rgba(0,0,0,0.05)] transition-all duration-300 lg:shadow-[0_6px_24px_rgba(0,0,0,0.06)] lg:hover:border-brand-blue lg:hover:shadow-[0_16px_32px_rgba(58,78,202,0.16)]">
       <div className="flex flex-col lg:flex-row">
         <div className="flex flex-1 flex-col gap-4 p-4 sm:p-5 lg:p-6">
-          <FlightLegRow leg={result.outbound} luggage={result.luggage} />
-          {result.return && (
-            <>
-              <div className="border-t border-[#0000001A]" />
-              <FlightLegRow leg={result.return} luggage={result.luggage} />
-            </>
-          )}
+          {legs.map((leg, index) => (
+            <Fragment key={index}>
+              {index > 0 && <div className="border-t border-[#0000001A]" />}
+              <FlightLegRow leg={leg} luggage={result.luggage} />
+            </Fragment>
+          ))}
         </div>
 
         <div className="flex shrink-0 flex-col items-start gap-3 border-t border-[#0000001A] p-4 sm:p-5 lg:w-[250px] lg:items-end lg:justify-center lg:border-l lg:border-t-0 lg:p-6">

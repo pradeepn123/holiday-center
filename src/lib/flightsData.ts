@@ -196,7 +196,14 @@ type FlightSearchQuery = {
   departureDate?: string;
   returnDate?: string;
   tripType?: string;
+  legs?: { from: string; to: string; date: string }[];
 };
+
+/** Returns every leg to display for a result: multi-city legs, or outbound (+ return). */
+export function getFlightLegs(result: FlightResult): FlightLeg[] {
+  if (result.legs && result.legs.length > 0) return result.legs;
+  return [result.outbound, ...(result.return ? [result.return] : [])];
+}
 
 const FLIGHT_TEMPLATES: Array<{
   departureTime: string;
@@ -241,22 +248,60 @@ function buildLeg(
   };
 }
 
+function resolveMultiCityLegs(query: FlightSearchQuery): { from: string; to: string; date: string }[] {
+  const provided = (query.legs ?? []).filter((leg) => leg.from.trim() || leg.to.trim());
+  if (provided.length >= 2) return provided;
+  const from = query.from?.trim() || "Kuwait";
+  const to = query.to?.trim() || "Dubai";
+  return [
+    { from, to, date: query.departureDate ?? "" },
+    { from: to, to: from, date: "" },
+  ];
+}
+
 export function generateFlightResults(query: FlightSearchQuery): FlightResult[] {
   const from = query.from?.trim() || "Kuwait";
   const to = query.to?.trim() || "Dubai";
   const isRoundTrip = query.tripType === "roundtrip";
+  const isMultiCity = query.tripType === "multicity";
   const departureDateLabel = addDaysLabel(query.departureDate, 0);
   const returnDateLabel = addDaysLabel(query.returnDate ?? query.departureDate, isRoundTrip ? 0 : 5);
+  const multiCityLegs = isMultiCity ? resolveMultiCityLegs(query) : [];
 
   return FLIGHT_TEMPLATES.map((template, index) => {
     const airline = flightAirlines[index % flightAirlines.length];
     const luggage = flightLuggageOptions[index % flightLuggageOptions.length];
+    const isLast = index === FLIGHT_TEMPLATES.length - 1;
+
+    if (isMultiCity) {
+      const legs = multiCityLegs.map((leg, legIndex) =>
+        buildLeg(
+          template,
+          airline,
+          index + legIndex * 20,
+          leg.from.trim() || "Kuwait",
+          leg.to.trim() || "Dubai",
+          addDaysLabel(leg.date || query.departureDate, legIndex * 3)
+        )
+      );
+      const price = Math.round((template.basePrice + index * 6) * legs.length * 0.85);
+
+      return {
+        id: `flight-${index + 1}`,
+        outbound: legs[0],
+        return: undefined,
+        legs,
+        price,
+        originalPrice: isLast ? price + 120 : undefined,
+        refundable: template.refundable,
+        luggage,
+      };
+    }
+
     const outbound = buildLeg(template, airline, index, from, to, departureDateLabel);
     const returnLeg = isRoundTrip
       ? buildLeg(template, airline, index + 50, to, from, returnDateLabel)
       : undefined;
-
-    const isLast = index === FLIGHT_TEMPLATES.length - 1;
     const price = template.basePrice + index * 6;
 
     return {

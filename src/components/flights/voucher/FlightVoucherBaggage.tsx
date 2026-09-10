@@ -1,9 +1,10 @@
+import { getFlightLegs } from "@/lib/flightsData";
 import type { FlightResult } from "@/types";
 
 const CABIN_BAG_WEIGHT = "7 Kg";
 
 export function FlightVoucherBaggage({ flight }: { flight: FlightResult }) {
-  const sectors = [flight.outbound, ...(flight.return ? [flight.return] : [])];
+  const sectors = getFlightLegs(flight);
 
   return (
     <div className="flex flex-col gap-3 rounded-xl border border-[#e5e7eb] bg-white p-4">

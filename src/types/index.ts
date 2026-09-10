@@ -73,6 +73,8 @@ export type FlightResult = {
   id: string;
   outbound: FlightLeg;
   return?: FlightLeg;
+  /** All legs for a multi-city itinerary (includes the first leg). Absent for one-way / round trip. */
+  legs?: FlightLeg[];
   price: number;
   originalPrice?: number;
   refundable: boolean;

@@ -7,6 +7,7 @@ import { FlightBookingSummary } from "@/components/flights/booking/FlightBooking
 import { TravellerDetailsForm } from "@/components/flights/booking/TravellerDetailsForm";
 import { FlightContactForm } from "@/components/flights/booking/FlightContactForm";
 import { FlightPurchaseSummary } from "@/components/flights/booking/FlightPurchaseSummary";
+import { decodeFlightLegs } from "@/lib/flightParams";
 import { generateFlightResults } from "@/lib/flightsData";
 
 function firstValue(value: string | string[] | undefined): string {
@@ -30,8 +31,10 @@ export default async function FlightBookingPage({
   const departureDate = firstValue(query.departureDate);
   const returnDate = firstValue(query.returnDate);
   const passengers = Number(firstValue(query.passengers) || "1");
+  const legsParam = firstValue(query.legs);
+  const legs = tripType === "multicity" ? decodeFlightLegs(legsParam) : [];
 
-  const flights = generateFlightResults({ from, to, tripType, departureDate, returnDate });
+  const flights = generateFlightResults({ from, to, tripType, departureDate, returnDate, legs });
   const flight = flights.find((item) => item.id === flightId);
 
   if (!flight) {
@@ -45,6 +48,7 @@ export default async function FlightBookingPage({
   if (departureDate) confirmationParams.set("departureDate", departureDate);
   if (returnDate) confirmationParams.set("returnDate", returnDate);
   confirmationParams.set("passengers", String(passengers));
+  if (legsParam) confirmationParams.set("legs", legsParam);
 
   return (
     <>

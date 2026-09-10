@@ -1,13 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import Image from "next/image";
 import Link from "next/link";
 import { Clock, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { getFlightItinerary, stopsLabel } from "@/lib/flightsData";
+import { getFlightItinerary, getFlightLegs, stopsLabel } from "@/lib/flightsData";
 import type { FlightLeg, FlightResult } from "@/types";
+
+function legLabel(index: number, total: number): string {
+  if (total <= 2) return index === 0 ? "Departure" : "Arrival";
+  return `Flight ${index + 1}`;
+}
 
 const TABS = ["Flight Itinerary", "Fare Breakdown", "Fare Rules", "Baggage Info"] as const;
 export type FlightDetailsTab = (typeof TABS)[number];
@@ -84,13 +89,12 @@ export function FlightDetailsModal({
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
           {activeTab === "Flight Itinerary" && (
             <div className="flex flex-col gap-6">
-              <FlightLegSection leg={result.outbound} label="Departure" />
-              {result.return && (
-                <>
-                  <div className="border-t border-neutral-100" />
-                  <FlightLegSection leg={result.return} label="Arrival" />
-                </>
-              )}
+              {getFlightLegs(result).map((leg, index, all) => (
+                <Fragment key={index}>
+                  {index > 0 && <div className="border-t border-neutral-100" />}
+                  <FlightLegSection leg={leg} label={legLabel(index, all.length)} />
+                </Fragment>
+              ))}
             </div>
           )}
           {activeTab === "Fare Breakdown" && <FareBreakdownPanel result={result} />}
@@ -283,7 +287,7 @@ function FareRulesPanel() {
 }
 
 function BaggageInfoPanel({ result }: { result: FlightResult }) {
-  const routes = [{ leg: result.outbound }, ...(result.return ? [{ leg: result.return }] : [])];
+  const routes = getFlightLegs(result).map((leg) => ({ leg }));
 
   return (
     <div className="flex flex-col gap-6">

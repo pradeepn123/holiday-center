@@ -8,7 +8,8 @@ import { FlightVoucherBaggage } from "@/components/flights/voucher/FlightVoucher
 import { FlightVoucherPayment } from "@/components/flights/voucher/FlightVoucherPayment";
 import { FlightVoucherTerms } from "@/components/flights/voucher/FlightVoucherTerms";
 import { buildPnr, buildReferenceId } from "@/components/flights/voucher/voucherUtils";
-import { generateFlightResults } from "@/lib/flightsData";
+import { decodeFlightLegs } from "@/lib/flightParams";
+import { generateFlightResults, getFlightLegs } from "@/lib/flightsData";
 import { formatDate, startOfToday, toISODate } from "@/lib/dateUtils";
 
 function firstValue(value: string | string[] | undefined): string {
@@ -32,13 +33,17 @@ export default async function FlightVoucherPage({
   const departureDate = firstValue(query.departureDate);
   const returnDate = firstValue(query.returnDate);
   const passengers = Number(firstValue(query.passengers) || "1");
+  const legs = tripType === "multicity" ? decodeFlightLegs(firstValue(query.legs)) : [];
 
-  const flights = generateFlightResults({ from, to, tripType, departureDate, returnDate });
+  const flights = generateFlightResults({ from, to, tripType, departureDate, returnDate, legs });
   const flight = flights.find((item) => item.id === flightId);
 
   if (!flight) {
     notFound();
   }
+
+  const flightLegs = getFlightLegs(flight);
+  const isMultiCity = tripType === "multicity" && flightLegs.length > 2;
 
   const referenceId = buildReferenceId(flight.id, flight.outbound.originCode, flight.outbound.destinationCode);
   const pnr = buildPnr(flight.id);
@@ -53,9 +58,21 @@ export default async function FlightVoucherPage({
             <VoucherHeader />
             <FlightVoucherReference referenceId={referenceId} bookingDate={bookingDate} pnr={pnr} />
 
-            <FlightVoucherLegDetails label="Departure Flight Details" leg={flight.outbound} />
-            {flight.return && (
-              <FlightVoucherLegDetails label="Return Flight Details" leg={flight.return} />
+            {isMultiCity ? (
+              flightLegs.map((leg, index) => (
+                <FlightVoucherLegDetails
+                  key={index}
+                  label={`Flight ${index + 1} Details`}
+                  leg={leg}
+                />
+              ))
+            ) : (
+              <>
+                <FlightVoucherLegDetails label="Departure Flight Details" leg={flight.outbound} />
+                {flight.return && (
+                  <FlightVoucherLegDetails label="Return Flight Details" leg={flight.return} />
+                )}
+              </>
             )}
 
             <FlightVoucherBaggage flight={flight} />

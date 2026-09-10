@@ -19,11 +19,13 @@ import {
   Plus,
   Search,
   Users,
+  X,
 } from "lucide-react";
 import { searchCategories } from "@/lib/data";
 import { CruiseSupportPanel } from "@/components/sections/CruiseSupportPanel";
 import { DateRangeField, SingleDateField } from "@/components/ui/DatePicker";
 import { formatDate } from "@/lib/dateUtils";
+import { encodeFlightLegs, type FlightLegParam } from "@/lib/flightParams";
 import { useClickOutside } from "@/lib/hooks";
 import { cn } from "@/lib/utils";
 
@@ -145,6 +147,7 @@ export type FlightSearchInitialValues = {
   travelClass?: string;
   passengers?: number;
   directFlightOnly?: boolean;
+  legs?: FlightLegParam[];
 };
 
 function buildInitialRooms(initialValues?: SearchWidgetInitialValues): RoomConfig[] {
@@ -499,11 +502,13 @@ function LocationField({
   placeholder,
   value,
   onChange,
+  wide = true,
 }: {
   icon: React.ReactNode;
   placeholder?: string;
   value?: string;
   onChange?: (value: string) => void;
+  wide?: boolean;
 }) {
   const [internalQuery, setInternalQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -520,7 +525,7 @@ function LocationField({
       : [];
 
   return (
-    <div ref={containerRef} className="relative flex-1 lg:flex-[1.6]">
+    <div ref={containerRef} className={cn("relative flex-1", wide && "lg:flex-[1.6]")}>
       <div className={fieldContainerClass}>
         <span className="shrink-0 text-neutral-500">{icon}</span>
         <input
@@ -907,6 +912,28 @@ const TRIP_TYPES = [
 const TRAVEL_CLASSES = ["Economy", "Premium Economy", "Business", "First"];
 const MAX_PASSENGERS = 9;
 const MAX_INFANTS = 6;
+const MIN_FLIGHT_LEGS = 2;
+const MAX_FLIGHT_LEGS = 5;
+
+function initialFlightLegs(initialValues?: FlightSearchInitialValues): FlightLegParam[] {
+  const provided = (initialValues?.legs ?? []).filter((leg) => leg.from || leg.to || leg.date);
+  const base =
+    provided.length >= MIN_FLIGHT_LEGS
+      ? provided
+      : [
+          {
+            from: initialValues?.from ?? "",
+            to: initialValues?.to ?? "",
+            date: initialValues?.departureDate ?? "",
+          },
+          { from: initialValues?.to ?? "", to: "", date: "" },
+        ];
+  return base.slice(0, MAX_FLIGHT_LEGS).map((leg) => ({
+    from: leg.from ?? "",
+    to: leg.to ?? "",
+    date: leg.date ?? "",
+  }));
+}
 
 function PassengerCounterRow({
   label,
@@ -982,23 +1009,51 @@ function FlightSearchPanel({
   const [departureDate, setDepartureDate] = useState(initialValues?.departureDate ?? "");
   const [returnDate, setReturnDate] = useState(initialValues?.returnDate ?? "");
   const [directFlightOnly, setDirectFlightOnly] = useState(initialValues?.directFlightOnly ?? false);
+  const [legs, setLegs] = useState<FlightLegParam[]>(() => initialFlightLegs(initialValues));
   const passengersRef = useClickOutside<HTMLDivElement>(() => setIsPassengersOpen(false));
   const classRef = useClickOutside<HTMLDivElement>(() => setIsClassOpen(false));
 
   const isRoundTrip = tripType === "roundtrip";
+  const isMultiCity = tripType === "multicity";
+
+  function updateLeg(index: number, patch: Partial<FlightLegParam>) {
+    setLegs((prev) => prev.map((leg, i) => (i === index ? { ...leg, ...patch } : leg)));
+  }
+
+  function addLeg() {
+    setLegs((prev) => {
+      if (prev.length >= MAX_FLIGHT_LEGS) return prev;
+      const last = prev[prev.length - 1];
+      return [...prev, { from: last?.to ?? "", to: "", date: "" }];
+    });
+  }
+
+  function removeLeg(index: number) {
+    setLegs((prev) => (prev.length <= MIN_FLIGHT_LEGS ? prev : prev.filter((_, i) => i !== index)));
+  }
 
   function handleSearch() {
     onSearchStart?.();
 
     const params = new URLSearchParams();
     params.set("tripType", tripType);
-    if (from.trim()) params.set("from", from.trim());
-    if (to.trim()) params.set("to", to.trim());
-    if (departureDate) params.set("departureDate", departureDate);
-    if (isRoundTrip && returnDate) params.set("returnDate", returnDate);
     params.set("travelClass", travelClass);
     params.set("passengers", String(passengers));
     if (directFlightOnly) params.set("directFlightOnly", "1");
+
+    if (isMultiCity) {
+      const encoded = encodeFlightLegs(legs);
+      if (encoded) params.set("legs", encoded);
+      const firstLeg = legs.find((leg) => leg.from.trim());
+      if (firstLeg?.from.trim()) params.set("from", firstLeg.from.trim());
+      const lastLeg = [...legs].reverse().find((leg) => leg.to.trim());
+      if (lastLeg?.to.trim()) params.set("to", lastLeg.to.trim());
+    } else {
+      if (from.trim()) params.set("from", from.trim());
+      if (to.trim()) params.set("to", to.trim());
+      if (departureDate) params.set("departureDate", departureDate);
+      if (isRoundTrip && returnDate) params.set("returnDate", returnDate);
+    }
 
     startSearchTransition(() => {
       router.push(`/flights?${params.toString()}`);
@@ -1131,55 +1186,121 @@ function FlightSearchPanel({
         </div>
       </div>
 
-      <div className="flex flex-col gap-2 px-3 pb-3 pt-1 sm:px-4 sm:pb-4 sm:pt-2 lg:flex-row lg:items-center">
-        <LocationField
-          icon={<PlaneTakeoff className="size-[18px]" />}
-          placeholder="From"
-          value={from}
-          onChange={setFrom}
-        />
-        <LocationField
-          icon={<PlaneLanding className="size-[18px]" />}
-          placeholder="To"
-          value={to}
-          onChange={setTo}
-        />
+      {isMultiCity ? (
+        <div className="flex flex-col gap-3 px-3 pb-3 pt-1 sm:px-4 sm:pb-4 sm:pt-2">
+          {legs.map((leg, index) => (
+            <div key={index} className="flex flex-col gap-2 lg:flex-row lg:items-center">
+              <LocationField
+                wide={false}
+                icon={<PlaneTakeoff className="size-[18px]" />}
+                placeholder="From"
+                value={leg.from}
+                onChange={(value) => updateLeg(index, { from: value })}
+              />
+              <LocationField
+                wide={false}
+                icon={<PlaneLanding className="size-[18px]" />}
+                placeholder="To"
+                value={leg.to}
+                onChange={(value) => updateLeg(index, { to: value })}
+              />
+              <SingleDateField
+                icon={<Calendar className="size-[18px]" />}
+                placeholder="Booking Date"
+                value={leg.date}
+                onChange={(value) => updateLeg(index, { date: value })}
+                minDateIso={index > 0 ? legs[index - 1]?.date || undefined : undefined}
+              />
 
-        <SingleDateField
-          icon={<Calendar className="size-[18px]" />}
-          placeholder="Departure Date"
-          value={departureDate}
-          onChange={(nextDeparture) => {
-            setDepartureDate(nextDeparture);
-            if (returnDate && returnDate < nextDeparture) {
-              setReturnDate("");
-            }
-          }}
-        />
+              <div className="flex h-[65px] shrink-0 items-center justify-center lg:w-[180px]">
+                {index === 0 ? (
+                  <button
+                    type="button"
+                    onClick={handleSearch}
+                    disabled={isSearching}
+                    className="flex h-full w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-brand-blue px-5 text-[15px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {isSearching ? (
+                      <Loader2 className="size-[18px] animate-spin" />
+                    ) : (
+                      <Search className="size-[18px]" />
+                    )}
+                    {isSearching ? "Searching..." : "Search Flight"}
+                  </button>
+                ) : index === 1 ? (
+                  <button
+                    type="button"
+                    onClick={addLeg}
+                    disabled={legs.length >= MAX_FLIGHT_LEGS}
+                    className="text-[15px] font-semibold text-brand-blue transition-colors hover:text-brand-blue-dark disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    +Add Flight
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => removeLeg(index)}
+                    aria-label="Remove flight"
+                    className="flex size-8 items-center justify-center rounded-full bg-neutral-900 text-white transition-colors hover:bg-neutral-700"
+                  >
+                    <X className="size-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-2 px-3 pb-3 pt-1 sm:px-4 sm:pb-4 sm:pt-2 lg:flex-row lg:items-center">
+          <LocationField
+            icon={<PlaneTakeoff className="size-[18px]" />}
+            placeholder="From"
+            value={from}
+            onChange={setFrom}
+          />
+          <LocationField
+            icon={<PlaneLanding className="size-[18px]" />}
+            placeholder="To"
+            value={to}
+            onChange={setTo}
+          />
 
-        <SingleDateField
-          icon={<Calendar className="size-[18px]" />}
-          placeholder="Book a round trip"
-          value={returnDate}
-          onChange={setReturnDate}
-          minDateIso={departureDate || undefined}
-          disabled={!isRoundTrip}
-        />
+          <SingleDateField
+            icon={<Calendar className="size-[18px]" />}
+            placeholder="Departure Date"
+            value={departureDate}
+            onChange={(nextDeparture) => {
+              setDepartureDate(nextDeparture);
+              if (returnDate && returnDate < nextDeparture) {
+                setReturnDate("");
+              }
+            }}
+          />
 
-        <button
-          type="button"
-          onClick={handleSearch}
-          disabled={isSearching}
-          className="flex h-[65px] shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
-        >
-          {isSearching ? (
-            <Loader2 className="size-[18px] animate-spin" />
-          ) : (
-            <Search className="size-[18px]" />
-          )}
-          {isSearching ? "Searching..." : "Search Flight"}
-        </button>
-      </div>
+          <SingleDateField
+            icon={<Calendar className="size-[18px]" />}
+            placeholder="Book a round trip"
+            value={returnDate}
+            onChange={setReturnDate}
+            minDateIso={departureDate || undefined}
+            disabled={!isRoundTrip}
+          />
+
+          <button
+            type="button"
+            onClick={handleSearch}
+            disabled={isSearching}
+            className="flex h-[65px] shrink-0 items-center justify-center gap-2 rounded-xl bg-brand-blue px-8 text-[15px] font-semibold text-white transition-transform hover:scale-[1.02] disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {isSearching ? (
+              <Loader2 className="size-[18px] animate-spin" />
+            ) : (
+              <Search className="size-[18px]" />
+            )}
+            {isSearching ? "Searching..." : "Search Flight"}
+          </button>
+        </div>
+      )}
 
       <div className="px-3 pb-3 sm:px-4 sm:pb-4">
         <label className="flex items-center gap-2 text-[14px] text-neutral-700">

@@ -1,6 +1,51 @@
 import Image from "next/image";
-import { CABIN_BAGGAGE, compactLuggage, formatFlightDuration, stopsLabel } from "@/lib/flightsData";
+import {
+  CABIN_BAGGAGE,
+  compactLuggage,
+  formatFlightDuration,
+  getFlightItinerary,
+  stopsLabel,
+} from "@/lib/flightsData";
 import type { FlightLeg } from "@/types";
+
+const stopBadgeClass =
+  "whitespace-nowrap rounded-full bg-[#EEF2FA] px-3 py-1 text-[12px] font-medium text-[#224BA0]";
+
+function StopsBadge({ leg }: { leg: FlightLeg }) {
+  const label = stopsLabel(leg.stops);
+
+  if (leg.stops <= 0) {
+    return <span className={stopBadgeClass}>{label}</span>;
+  }
+
+  const { layovers } = getFlightItinerary(leg);
+  const viaText = layovers.map((layover) => `${layover.city} (${layover.code})`).join(", ");
+
+  return (
+    <span className="group relative">
+      <span
+        title={`Layover via ${viaText}`}
+        className={`${stopBadgeClass} cursor-help decoration-dotted decoration-[#224BA0]/50 underline-offset-[3px] hover:underline`}
+      >
+        {label}
+      </span>
+      <span
+        role="tooltip"
+        className="pointer-events-none absolute bottom-[calc(100%+8px)] left-1/2 z-30 hidden -translate-x-1/2 flex-col gap-0.5 rounded-lg bg-neutral-900 px-3 py-2 text-left shadow-[0_8px_24px_rgba(0,0,0,0.25)] group-hover:flex"
+      >
+        <span className="whitespace-nowrap text-[10px] font-semibold uppercase tracking-wide text-white/50">
+          {leg.airline} · Layover
+        </span>
+        {layovers.map((layover, index) => (
+          <span key={index} className="whitespace-nowrap text-[11px] font-medium text-white">
+            {layover.city} ({layover.code}) · {layover.durationLabel}
+          </span>
+        ))}
+        <span className="absolute left-1/2 top-full size-2 -translate-x-1/2 -translate-y-1/2 rotate-45 bg-neutral-900" />
+      </span>
+    </span>
+  );
+}
 
 function CabinBagIcon({ className }: { className?: string }) {
   return (
@@ -57,9 +102,7 @@ export function FlightLegRow({ leg, luggage }: { leg: FlightLeg; luggage?: strin
             <span className="h-px flex-1 border-t border-dashed border-[#0000001A]" />
           </div>
           <div className="flex flex-wrap items-center justify-center gap-1.5">
-            <span className="whitespace-nowrap rounded-full bg-[#EEF2FA] px-3 py-1 text-[12px] font-medium text-[#224BA0]">
-              {stopsLabel(leg.stops)}
-            </span>
+            <StopsBadge leg={leg} />
             {luggage && (
               <span className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-[#EEF2FA] px-3 py-1 text-[12px] font-medium text-[#224BA0]">
                 <CheckedBagIcon className="h-[13px] w-auto shrink-0" />
