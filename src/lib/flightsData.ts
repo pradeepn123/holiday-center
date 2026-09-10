@@ -57,6 +57,16 @@ export function stopsLabel(stops: number) {
   return `${stops} Stop${stops === 1 ? "" : "s"}`;
 }
 
+/** Compact form of a checked-baggage allowance, e.g. "1 Piece" -> "1P", "20 Kilograms" -> "20kg". */
+export function compactLuggage(luggage: string) {
+  const [amount, unit] = luggage.trim().split(/\s+/);
+  if (!amount) return luggage;
+  return unit?.toLowerCase().startsWith("p") ? `${amount}P` : `${amount}kg`;
+}
+
+/** Standard cabin (carry-on) baggage allowance shown across the flight UI. */
+export const CABIN_BAGGAGE = "7kg";
+
 export const flightTimeSlots = ["12AM - 6AM", "6AM - 12PM", "12PM - 6PM", "6PM - 12AM"] as const;
 
 export function timeSlotFor(time: string): (typeof flightTimeSlots)[number] {

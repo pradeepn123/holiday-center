@@ -112,7 +112,12 @@ export function FlightResultsList({
           </div>
         ) : (
           sortedFlights.map((flight) => (
-            <FlightResultCard key={flight.id} result={flight} searchParams={searchParams} />
+            <FlightResultCard
+              key={flight.id}
+              result={flight}
+              searchParams={searchParams}
+              siblings={sortedFlights.filter((other) => other.id !== flight.id)}
+            />
           ))
         )}
       </div>

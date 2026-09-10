@@ -9,19 +9,22 @@ import { cn } from "@/lib/utils";
 import { getFlightItinerary, stopsLabel } from "@/lib/flightsData";
 import type { FlightLeg, FlightResult } from "@/types";
 
-const TABS = ["Flight Details", "Fare Breakdown", "Fare Rules", "Baggage Info"] as const;
-type Tab = (typeof TABS)[number];
+const TABS = ["Flight Itinerary", "Fare Breakdown", "Fare Rules", "Baggage Info"] as const;
+export type FlightDetailsTab = (typeof TABS)[number];
+type Tab = FlightDetailsTab;
 
 export function FlightDetailsModal({
   result,
   bookingHref,
+  initialTab = "Flight Itinerary",
   onClose,
 }: {
   result: FlightResult;
   bookingHref: string;
+  initialTab?: Tab;
   onClose: () => void;
 }) {
-  const [activeTab, setActiveTab] = useState<Tab>("Flight Details");
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
   const hasDiscount = typeof result.originalPrice === "number";
 
   useEffect(() => {
@@ -79,7 +82,7 @@ export function FlightDetailsModal({
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
-          {activeTab === "Flight Details" && (
+          {activeTab === "Flight Itinerary" && (
             <div className="flex flex-col gap-6">
               <FlightLegSection leg={result.outbound} label="Departure" />
               {result.return && (
