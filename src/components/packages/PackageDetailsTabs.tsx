@@ -16,7 +16,7 @@ export function PackageDetailsTabs() {
   const [activeId, setActiveId] = useState(TABS[0].id);
 
   return (
-    <div className="sticky top-24 z-40 flex items-center gap-8 rounded-2xl border border-neutral-100 bg-white px-6">
+    <div className="scrollbar-hide sticky top-24 z-40 flex items-center gap-5 overflow-x-auto rounded-2xl border border-neutral-100 bg-white px-4 sm:gap-8 sm:px-6">
       {TABS.map((tab) => {
         const isActive = tab.id === activeId;
         return (
@@ -25,7 +25,7 @@ export function PackageDetailsTabs() {
             href={`#${tab.id}`}
             onClick={() => setActiveId(tab.id)}
             className={cn(
-              "relative shrink-0 py-4 text-[14px] font-semibold transition-colors",
+              "relative shrink-0 whitespace-nowrap py-4 text-[14px] font-semibold transition-colors",
               isActive ? "text-brand-blue" : "text-neutral-500 hover:text-neutral-700"
             )}
           >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, useTransition } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -983,6 +983,72 @@ function PassengerCounterRow({
   );
 }
 
+/**
+ * Positions a dropdown panel via a portal, clamped to stay within the viewport so it never
+ * overflows off-screen on narrow/mobile widths (the anchor button can sit anywhere in the row).
+ */
+function useDropdownPanel(
+  containerRef: React.RefObject<HTMLDivElement | null>,
+  panelRef: React.RefObject<HTMLDivElement | null>,
+  maxWidth: number
+) {
+  const [open, setOpen] = useState(false);
+  const [panelStyle, setPanelStyle] = useState<{ top: number; left: number; width: number } | null>(
+    null
+  );
+
+  const computePanelPosition = useCallback(() => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const width = Math.min(maxWidth, window.innerWidth - 32);
+    const left = Math.min(Math.max(16, rect.right - width), window.innerWidth - width - 16);
+    setPanelStyle({ top: rect.bottom + 8, left: Math.max(16, left), width });
+  }, [containerRef, maxWidth]);
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handlePointerDown(event: MouseEvent) {
+      const target = event.target as Node;
+      if (containerRef.current?.contains(target) || panelRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    window.addEventListener("scroll", computePanelPosition, true);
+    window.addEventListener("resize", computePanelPosition);
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      window.removeEventListener("scroll", computePanelPosition, true);
+      window.removeEventListener("resize", computePanelPosition);
+    };
+  }, [open, computePanelPosition, containerRef, panelRef]);
+
+  // After the panel mounts (or its content/position changes), flip it above the anchor if its
+  // measured height would otherwise push it below the viewport — fixed-position panels don't
+  // become reachable by scrolling the page, so this must be corrected before paint.
+  useLayoutEffect(() => {
+    if (!open || !panelStyle || !panelRef.current || !containerRef.current) return;
+    const panelRect = panelRef.current.getBoundingClientRect();
+    const overflow = panelRect.bottom - (window.innerHeight - 16);
+    if (overflow <= 0) return;
+
+    const anchorRect = containerRef.current.getBoundingClientRect();
+    const flippedTop = anchorRect.top - 8 - panelRect.height;
+    const nextTop = flippedTop >= 16 ? flippedTop : Math.max(16, window.innerHeight - panelRect.height - 16);
+    setPanelStyle((prev) => (prev ? { ...prev, top: nextTop } : prev));
+  }, [open, panelStyle, containerRef, panelRef]);
+
+  function toggleOpen() {
+    if (!open) computePanelPosition();
+    setOpen((value) => !value);
+  }
+
+  return { open, setOpen, toggleOpen, panelStyle };
+}
+
 function FlightSearchPanel({
   className,
   initialValues,
@@ -1004,14 +1070,16 @@ function FlightSearchPanel({
   const passengers = adults + children + infants;
   const [from, setFrom] = useState(initialValues?.from ?? "");
   const [to, setTo] = useState(initialValues?.to ?? "");
-  const [isPassengersOpen, setIsPassengersOpen] = useState(false);
-  const [isClassOpen, setIsClassOpen] = useState(false);
   const [departureDate, setDepartureDate] = useState(initialValues?.departureDate ?? "");
   const [returnDate, setReturnDate] = useState(initialValues?.returnDate ?? "");
   const [directFlightOnly, setDirectFlightOnly] = useState(initialValues?.directFlightOnly ?? false);
   const [legs, setLegs] = useState<FlightLegParam[]>(() => initialFlightLegs(initialValues));
-  const passengersRef = useClickOutside<HTMLDivElement>(() => setIsPassengersOpen(false));
-  const classRef = useClickOutside<HTMLDivElement>(() => setIsClassOpen(false));
+  const classContainerRef = useRef<HTMLDivElement>(null);
+  const classPanelRef = useRef<HTMLDivElement>(null);
+  const classDropdown = useDropdownPanel(classContainerRef, classPanelRef, 180);
+  const passengersContainerRef = useRef<HTMLDivElement>(null);
+  const passengersPanelRef = useRef<HTMLDivElement>(null);
+  const passengersDropdown = useDropdownPanel(passengersContainerRef, passengersPanelRef, 280);
 
   const isRoundTrip = tripType === "roundtrip";
   const isMultiCity = tripType === "multicity";
@@ -1063,14 +1131,14 @@ function FlightSearchPanel({
   return (
     <div className={cn("rounded-2xl bg-white shadow-[0_10px_30px_rgba(0,0,0,0.12)]", className)}>
       <div className="flex flex-wrap items-center justify-between gap-3 px-3 pb-2 pt-3 sm:px-4 sm:pb-3 sm:pt-4">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="scrollbar-hide flex w-full items-center gap-2 overflow-x-auto sm:w-auto sm:flex-wrap sm:overflow-visible">
           {TRIP_TYPES.map((type) => (
             <button
               key={type.value}
               type="button"
               onClick={() => setTripType(type.value)}
               className={cn(
-                "rounded-full px-4 py-2 text-[14px] font-medium transition-colors",
+                "shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[14px] font-medium transition-colors",
                 tripType === type.value
                   ? "bg-[#EBF86C] text-[#2C341D]"
                   : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
@@ -1082,106 +1150,130 @@ function FlightSearchPanel({
         </div>
 
         <div className="flex items-center gap-5">
-          <div ref={classRef} className="relative">
+          <div ref={classContainerRef} className="relative">
             <button
               type="button"
-              onClick={() => setIsClassOpen((value) => !value)}
+              onClick={classDropdown.toggleOpen}
               className="flex items-center gap-1 text-[14px] font-medium text-neutral-800"
             >
               {travelClass}
               <ChevronDown
                 className={cn(
                   "size-4 text-neutral-400 transition-transform",
-                  isClassOpen && "rotate-180"
+                  classDropdown.open && "rotate-180"
                 )}
               />
             </button>
 
-            {isClassOpen && (
-              <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[180px] rounded-2xl border border-neutral-100 bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-                {TRAVEL_CLASSES.map((option) => (
-                  <button
-                    key={option}
-                    type="button"
-                    onClick={() => {
-                      setTravelClass(option);
-                      setIsClassOpen(false);
-                    }}
-                    className={cn(
-                      "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[14px] font-medium transition-colors hover:bg-neutral-100",
-                      travelClass === option ? "text-brand-blue" : "text-neutral-700"
-                    )}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
-            )}
+            {classDropdown.open &&
+              classDropdown.panelStyle &&
+              createPortal(
+                <div
+                  ref={classPanelRef}
+                  style={{
+                    position: "fixed",
+                    top: classDropdown.panelStyle.top,
+                    left: classDropdown.panelStyle.left,
+                    width: classDropdown.panelStyle.width,
+                  }}
+                  className="z-[100] rounded-2xl border border-neutral-100 bg-white p-2 shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
+                >
+                  {TRAVEL_CLASSES.map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => {
+                        setTravelClass(option);
+                        classDropdown.setOpen(false);
+                      }}
+                      className={cn(
+                        "flex w-full items-center rounded-lg px-3 py-2.5 text-left text-[14px] font-medium transition-colors hover:bg-neutral-100",
+                        travelClass === option ? "text-brand-blue" : "text-neutral-700"
+                      )}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>,
+                document.body
+              )}
           </div>
 
-          <div ref={passengersRef} className="relative">
+          <div ref={passengersContainerRef} className="relative">
             <button
               type="button"
-              onClick={() => setIsPassengersOpen((value) => !value)}
+              onClick={passengersDropdown.toggleOpen}
               className="flex items-center gap-1 text-[14px] font-medium text-neutral-800"
             >
               {passengers} Passenger{passengers === 1 ? "" : "s"}
               <ChevronDown
                 className={cn(
                   "size-4 text-neutral-400 transition-transform",
-                  isPassengersOpen && "rotate-180"
+                  passengersDropdown.open && "rotate-180"
                 )}
               />
             </button>
 
-            {isPassengersOpen && (
-              <div className="absolute right-0 top-[calc(100%+10px)] z-20 w-[280px] rounded-2xl border border-neutral-100 bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)]">
-                <div className="flex flex-col">
-                  <div className="border-b border-neutral-100 pb-5">
-                    <PassengerCounterRow
-                      label="Adults"
-                      hint="12+ yrs"
-                      value={adults}
-                      onDecrease={() => setAdults((value) => Math.max(1, value - 1))}
-                      onIncrease={() => setAdults((value) => Math.min(MAX_PASSENGERS, value + 1))}
-                      disableDecrease={adults <= 1}
-                      disableIncrease={adults >= MAX_PASSENGERS}
-                    />
-                  </div>
-                  <div className="border-b border-neutral-100 py-5">
-                    <PassengerCounterRow
-                      label="Child"
-                      hint="2-11 yrs"
-                      value={children}
-                      onDecrease={() => setChildren((value) => Math.max(0, value - 1))}
-                      onIncrease={() => setChildren((value) => Math.min(MAX_CHILDREN, value + 1))}
-                      disableDecrease={children <= 0}
-                      disableIncrease={children >= MAX_CHILDREN}
-                    />
-                  </div>
-                  <div className="pt-5">
-                    <PassengerCounterRow
-                      label="Infant"
-                      hint="Under 2 yrs"
-                      value={infants}
-                      onDecrease={() => setInfants((value) => Math.max(0, value - 1))}
-                      onIncrease={() =>
-                        setInfants((value) => Math.min(MAX_INFANTS, adults, value + 1))
-                      }
-                      disableDecrease={infants <= 0}
-                      disableIncrease={infants >= MAX_INFANTS || infants >= adults}
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsPassengersOpen(false)}
-                  className="mt-6 flex h-11 w-full items-center justify-center rounded-xl bg-brand-lime text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
+            {passengersDropdown.open &&
+              passengersDropdown.panelStyle &&
+              createPortal(
+                <div
+                  ref={passengersPanelRef}
+                  style={{
+                    position: "fixed",
+                    top: passengersDropdown.panelStyle.top,
+                    left: passengersDropdown.panelStyle.left,
+                    width: passengersDropdown.panelStyle.width,
+                  }}
+                  className="z-[100] rounded-2xl border border-neutral-100 bg-white p-5 shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
                 >
-                  Done
-                </button>
-              </div>
-            )}
+                  <div className="flex flex-col">
+                    <div className="border-b border-neutral-100 pb-5">
+                      <PassengerCounterRow
+                        label="Adults"
+                        hint="12+ yrs"
+                        value={adults}
+                        onDecrease={() => setAdults((value) => Math.max(1, value - 1))}
+                        onIncrease={() => setAdults((value) => Math.min(MAX_PASSENGERS, value + 1))}
+                        disableDecrease={adults <= 1}
+                        disableIncrease={adults >= MAX_PASSENGERS}
+                      />
+                    </div>
+                    <div className="border-b border-neutral-100 py-5">
+                      <PassengerCounterRow
+                        label="Child"
+                        hint="2-11 yrs"
+                        value={children}
+                        onDecrease={() => setChildren((value) => Math.max(0, value - 1))}
+                        onIncrease={() => setChildren((value) => Math.min(MAX_CHILDREN, value + 1))}
+                        disableDecrease={children <= 0}
+                        disableIncrease={children >= MAX_CHILDREN}
+                      />
+                    </div>
+                    <div className="pt-5">
+                      <PassengerCounterRow
+                        label="Infant"
+                        hint="Under 2 yrs"
+                        value={infants}
+                        onDecrease={() => setInfants((value) => Math.max(0, value - 1))}
+                        onIncrease={() =>
+                          setInfants((value) => Math.min(MAX_INFANTS, adults, value + 1))
+                        }
+                        disableDecrease={infants <= 0}
+                        disableIncrease={infants >= MAX_INFANTS || infants >= adults}
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => passengersDropdown.setOpen(false)}
+                    className="mt-6 flex h-11 w-full items-center justify-center rounded-xl bg-brand-lime text-[14px] font-semibold text-brand-dark transition-transform hover:scale-[1.02]"
+                  >
+                    Done
+                  </button>
+                </div>,
+                document.body
+              )}
           </div>
         </div>
       </div>

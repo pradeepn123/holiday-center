@@ -1,6 +1,8 @@
 "use client";
 
+import Image from "next/image";
 import { useState } from "react";
+import { RotateCcw } from "lucide-react";
 import { FilterSection, toggleInSet } from "@/components/ui/FilterSection";
 import { packageActivities, packageCountries, packageRegions } from "@/lib/data";
 
@@ -79,84 +81,90 @@ export function PackageFiltersSidebar({
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-3 rounded-[8px] border border-[#0000001A] bg-white px-4 py-3.5">
-        <span className="text-[16px] font-bold text-neutral-900">Filters</span>
+      <div className="flex items-center justify-between rounded-[8px] border border-[#0000001A] bg-white px-4 py-3.5">
+        <span className="flex items-center gap-2 text-[16px] font-bold text-neutral-900">
+          <Image src="/assets/icons/filter_icon.svg" alt="" width={18} height={18} />
+          Filters
+        </span>
         <button
           type="button"
           onClick={resetAll}
-          className="rounded-lg border border-neutral-200 px-3 py-1.5 text-[13px] font-semibold text-neutral-700 transition-colors hover:bg-neutral-50"
+          className="flex items-center gap-1.5 text-[13px] font-semibold text-brand-blue transition-colors hover:text-brand-blue/80"
         >
-          Reset All
+          <RotateCcw className="size-3.5" />
+          Reset
         </button>
       </div>
 
-      <FilterSection title="Price">
-        <div className="relative mt-2 h-1.5 rounded-full bg-neutral-200">
-          <div
-            className="absolute h-1.5 rounded-full bg-brand-blue"
-            style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
-          />
-          <input
-            type="range"
-            min={PRICE_MIN}
-            max={PRICE_MAX}
-            value={minPrice}
-            onChange={(event) => commitPrice(Math.min(Number(event.target.value), maxPrice - 10), maxPrice)}
-            className="range-thumb pointer-events-none absolute inset-x-0 -top-2.5 h-6 w-full appearance-none bg-transparent"
-          />
-          <input
-            type="range"
-            min={PRICE_MIN}
-            max={PRICE_MAX}
-            value={maxPrice}
-            onChange={(event) => commitPrice(minPrice, Math.max(Number(event.target.value), minPrice + 10))}
-            className="range-thumb pointer-events-none absolute inset-x-0 -top-2.5 h-6 w-full appearance-none bg-transparent"
-          />
-        </div>
-        <div className="mt-4 flex items-center justify-between text-[14px] font-medium text-neutral-700">
-          <span>USD {minPrice}</span>
-          <span>USD {maxPrice}</span>
-        </div>
-      </FilterSection>
+      <div className="flex flex-col gap-2 lg:max-h-[calc(100vh-12rem)] lg:overflow-y-auto lg:pr-1">
+        <FilterSection title="Price">
+          <div className="relative mt-2 h-1.5 rounded-full bg-neutral-200">
+            <div
+              className="absolute h-1.5 rounded-full bg-brand-blue"
+              style={{ left: `${minPercent}%`, right: `${100 - maxPercent}%` }}
+            />
+            <input
+              type="range"
+              min={PRICE_MIN}
+              max={PRICE_MAX}
+              value={minPrice}
+              onChange={(event) => commitPrice(Math.min(Number(event.target.value), maxPrice - 10), maxPrice)}
+              className="range-thumb pointer-events-none absolute inset-x-0 -top-2.5 h-6 w-full appearance-none bg-transparent"
+            />
+            <input
+              type="range"
+              min={PRICE_MIN}
+              max={PRICE_MAX}
+              value={maxPrice}
+              onChange={(event) => commitPrice(minPrice, Math.max(Number(event.target.value), minPrice + 10))}
+              className="range-thumb pointer-events-none absolute inset-x-0 -top-2.5 h-6 w-full appearance-none bg-transparent"
+            />
+          </div>
+          <div className="mt-4 flex items-center justify-between text-[14px] font-medium text-neutral-700">
+            <span>USD {minPrice}</span>
+            <span>USD {maxPrice}</span>
+          </div>
+        </FilterSection>
 
-      <FilterSection title="Regions">
-        <CheckboxList
-          options={packageRegions}
-          selected={filters.selectedRegions}
-          onToggle={(region) =>
-            onFiltersChange((prev) => ({
-              ...prev,
-              selectedRegions: toggleInSet(prev.selectedRegions, region),
-            }))
-          }
-        />
-      </FilterSection>
+        <FilterSection title="Regions">
+          <CheckboxList
+            options={packageRegions}
+            selected={filters.selectedRegions}
+            onToggle={(region) =>
+              onFiltersChange((prev) => ({
+                ...prev,
+                selectedRegions: toggleInSet(prev.selectedRegions, region),
+              }))
+            }
+          />
+        </FilterSection>
 
-      <FilterSection title="Country">
-        <CheckboxList
-          options={packageCountries}
-          selected={filters.selectedCountries}
-          onToggle={(country) =>
-            onFiltersChange((prev) => ({
-              ...prev,
-              selectedCountries: toggleInSet(prev.selectedCountries, country),
-            }))
-          }
-        />
-      </FilterSection>
+        <FilterSection title="Country">
+          <CheckboxList
+            options={packageCountries}
+            selected={filters.selectedCountries}
+            onToggle={(country) =>
+              onFiltersChange((prev) => ({
+                ...prev,
+                selectedCountries: toggleInSet(prev.selectedCountries, country),
+              }))
+            }
+          />
+        </FilterSection>
 
-      <FilterSection title="Activity">
-        <CheckboxList
-          options={packageActivities}
-          selected={filters.selectedActivities}
-          onToggle={(activity) =>
-            onFiltersChange((prev) => ({
-              ...prev,
-              selectedActivities: toggleInSet(prev.selectedActivities, activity),
-            }))
-          }
-        />
-      </FilterSection>
+        <FilterSection title="Activity">
+          <CheckboxList
+            options={packageActivities}
+            selected={filters.selectedActivities}
+            onToggle={(activity) =>
+              onFiltersChange((prev) => ({
+                ...prev,
+                selectedActivities: toggleInSet(prev.selectedActivities, activity),
+              }))
+            }
+          />
+        </FilterSection>
+      </div>
     </div>
   );
 }
